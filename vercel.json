@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
+  "functions": {
+    "api/paystack-webhook.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "BULK_SMS_API_KEY": "@bulk-sms-api-key",
+    "BULK_SMS_SENDER_ID": "@bulk-sms-sender-id",
+    "PAYSTACK_SECRET_KEY": "@paystack-secret-key",
+    "PAYSTACK_CALLBACK_URL": "@paystack-callback-url",
+    "FIREBASE_SERVICE_ACCOUNT": "@firebase-service-account",
+    "DATAFYHUB_API_TOKEN": "@datafyhub-api-token",
+    "AUTO_PROCESSING_ENABLED": "@auto-processing-enabled"
+  }
+}

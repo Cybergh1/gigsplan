@@ -1,0 +1,1873 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- MODIFIED Viewport for zoom prevention -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>gigsplan</title>
+
+    <!-- 📊 PAGE LOADER STYLES (from auth.html) -->
+    <style>
+        :root {
+            --spinner-color: #046D8B;
+        }
+
+        /* Top Progress Bar Loader */
+        .page-loader-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background-color: var(--spinner-color);
+            z-index: 99999;
+            transition: width 0.25s ease-out, opacity 0.4s ease-out;
+            opacity: 1;
+        }
+        .page-loader-progress.done {
+            opacity: 0;
+            transition: width 0.25s ease-out, opacity 0.5s ease-out 0.3s;
+        }
+
+        /* Loading Spinner Overlay */
+        .loading-spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0s 0.2s ease;
+        }
+        .loading-spinner-overlay.show {
+            opacity: 1;
+            visibility: visible;
+            transition-delay: 0s;
+        }
+
+        .loader-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Spinner Original */
+        .spinner-original {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-left-color: var(--spinner-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Loader L16 */
+        .loader-l16 {
+            width: 60px;
+            height: 16px;
+            display: none;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr;
+        }
+        .loader-l16:before, .loader-l16:after {
+            content: "";
+            grid-area: 1/1;
+            --c:no-repeat linear-gradient(#046D8B 0 0);
+            background: var(--c), var(--c), var(--c);
+            animation: l16-1 1.5s infinite linear, l16-2 1.5s infinite linear;
+            transform: scale(var(--s,1)) translate(3px,-3px);
+        }
+        .loader-l16:after { --s:-1; }
+        @keyframes l16-1 {
+            0%,3% {background-size:0 4px,4px 0,0 4px}
+            16.67%{background-size:100% 4px,4px 0,0 4px}
+            33.33%{background-size:100% 4px,4px 100%,0 4px}
+            46%,54% {background-size:100% 4px,4px 100%,100% 4px}
+            66.67%{background-size:0 4px,4px 100%,100% 4px}
+            83.33%{background-size:0 4px,4px 0,100% 4px}
+            96%,100% {background-size:0 4px,4px 0,0 4px}
+        }
+        @keyframes l16-2 {
+            0%,49.9%{background-position:0 0,100% 0,100% 100%}
+            50%,100%{background-position:100% 0,100% 100%,0 100%}
+        }
+
+        /* Loader L4 */
+        .loader-l4 {
+            height: 60px;
+            aspect-ratio: 2;
+            position: relative;
+            display: none;
+        }
+        .loader-l4:before {
+            content:"";
+            position: absolute;
+            inset: 100% 75% -3px 0;
+            background: #524656;
+            animation: l4-0 1s linear infinite alternate;
+        }
+        .loader-l4:after {
+            content: "";
+            position: absolute;
+            inset: auto 42.5% 0;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: #CF4647;
+            animation: l4-1 1s cubic-bezier(0,700,1,700) infinite alternate, l4-2 1s linear infinite alternate;
+        }
+        @keyframes l4-0 {
+            0%,30% {translate:0% -2px;rotate:20deg}
+            70%,to {translate:300% -2px;rotate:-20deg}
+        }
+        @keyframes l4-1 {
+            100% {translate:0 -200%}
+        }
+        @keyframes l4-2 {
+            100% {rotate:1turn}
+        }
+
+        /* 🔐 Toggle Switch for 2FA */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #046D8B;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .toggle-switch input:disabled + .toggle-slider {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+
+    <!-- Compact Become Agent Modal Styles -->
+    <style>
+        #becomeAgentModalOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.36);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+            padding: 20px;
+        }
+        .become-agent-modal {
+            width: 420px;
+            max-width: 100%;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+            color: #2c3e50;
+        }
+        .become-agent-modal .modal-icon { font-size: 28px; color: #046D8B; }
+        .become-agent-modal h3 { margin: 0; font-size: 18px; }
+        .become-agent-modal p { margin: 0; font-size: 13px; color: #6b7280; }
+        .become-agent-modal .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+        .become-agent-modal .modal-close {
+            position: absolute;
+            right: 18px;
+            top: 14px;
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        @media (max-width:480px) { .become-agent-modal { width: 100%; padding: 14px; border-radius: 10px; } }
+    </style>
+
+    <!-- === ADDED FAVICON LINES === -->
+    <link rel="icon" href="https://dev-dataverse-global.pantheonsite.io/wp-content/uploads/2025/08/IMG-20250807-WA0024-2.jpg" type="image/png">
+    <link rel="apple-touch-icon" href="https://dev-dataverse-global.pantheonsite.io/wp-content/uploads/2025/08/IMG-20250807-WA0024-2.jpg">
+    <!-- === END FAVICON LINES === -->
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- OneSignal SDK -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <!-- ADD SheetJS for Excel parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Paystack Inline JS for Popup Payments -->
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <!-- OneSignal Initialization -->
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        try {
+          await OneSignal.init({
+            appId: "ab6af61a-ebf8-49a1-b8b9-106ee85b5754", // Your OneSignal App ID
+            allowLocalhostAsSecureOrigin: true,
+            autoResubscribe: true,
+          });
+          console.log("OneSignal SDK Initialized successfully.");
+
+          OneSignal.User.PushSubscription.addEventListener('change', function(change) {
+            console.log("Push subscription state changed:", change);
+            if (change.current.optedIn) {
+                console.log("User is subscribed to push notifications with ID:", change.current.id);
+            } else if (change.current.optedIn === false) {
+                console.log("User is NOT subscribed to push notifications.");
+            }
+          });
+
+          if (!OneSignal.Notifications.isPushSupported()) {
+            console.warn("Push notifications are not supported by this browser.");
+            return;
+          }
+
+          const permission = await OneSignal.Notifications.getPermissionStatus();
+          const isSubscribed = await OneSignal.User.PushSubscription.getIsSubscribed();
+          const promptShownSession = sessionStorage.getItem('oneSignalPromptShown');
+
+          console.log("Current OneSignal Permission:", permission, "Is Subscribed:", isSubscribed, "Prompt Shown This Session:", promptShownSession);
+
+          if (!promptShownSession) {
+            if (permission === 'default') {
+                console.log("Notification permission is default. Requesting permission via OneSignal prompt...");
+                await OneSignal.Notifications.requestPermission();
+                sessionStorage.setItem('oneSignalPromptShown', 'true');
+            } else if (permission === 'granted' && !isSubscribed) {
+                console.log("Permission granted, but user not subscribed. Attempting to opt-in or re-prompt.");
+                await OneSignal.User.PushSubscription.optIn();
+                sessionStorage.setItem('oneSignalPromptShown', 'true');
+            }
+          } else {
+              console.log("OneSignal prompt already shown this session or user state doesn't require prompting.");
+          }
+
+        } catch (error) {
+          console.error("Error initializing OneSignal SDK or handling permissions/prompts:", error);
+        }
+      });
+    </script>
+
+    <!-- Chart.js SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- 📊 Page Loader Progress Bar (Top) -->
+<div id="page-loader-progress" class="page-loader-progress"></div>
+
+<!-- 🔄 Loading Spinner Overlay -->
+<div class="loading-spinner-overlay" id="loadingSpinnerOverlay">
+    <div class="loader-container">
+        <div class="spinner-original"></div>
+        <div class="loader-l16"></div>
+        <div class="loader-l4"></div>
+    </div>
+</div>
+<!-- Maintenance Mode Overlay -->
+<div class="maintenance-overlay" id="maintenanceOverlay" style="display: none;">
+    <div class="maintenance-card">
+        <div class="maintenance-icon">
+            <i class="fas fa-cog fa-spin"></i>
+        </div>
+        <h1>System Maintenance</h1>
+        <p class="maintenance-subtitle">We're currently performing scheduled maintenance to improve our services.</p>
+        <hr class="maintenance-divider">
+        <div class="maintenance-info-box">
+            <i class="fas fa-bolt"></i>
+            <span>System upgrades in progress</span>
+        </div>
+        <div class="maintenance-info-box">
+            <i class="fas fa-clock"></i>
+            <span>Page will refresh automatically when complete</span>
+        </div>
+    </div>
+</div>
+
+    <div class="site-notification-banner" id="siteNotificationBanner" style="display:none;">
+        <div class="notification-content-wrapper">
+            <div class="notification-bell-icon-container">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="notification-text-content">
+                <h3 class="notification-title" id="siteNotificationTitle">IMPORTANT ANNOUNCEMENT</h3>
+                <p id="siteNotificationMessage"></p>
+                <span class="notification-attribution" id="siteNotificationAttribution">by Coach Emma</span>
+            </div>
+            <button class="close-notification" id="closeSiteNotification" aria-label="Close notification">×</button>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="dashboard-app-container app-container" id="dashboardAppContainer" style="display: none;">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                     <!-- Replace this src with your actual logo URL -->
+                     <img src="https://i.postimg.cc/1R70Jy4K/Generated-Image-October-24-2025-1-22PM.png" alt="gigsplan Logo">
+                </div>
+                <div class="sidebar-title">
+                     <h2>Gigsplan</h2>
+                     <span id="userRoleDisplay">Customer</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="active" data-page="dashboard"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                    <li><a href="#" data-page="history"><i class="fas fa-history"></i> History</a></li>
+                    <li><a href="#" data-page="afa-registration"><i class="fas fa-id-card-alt"></i> AFA Orders</a></li>
+                    <li><a href="#" data-page="results-checker"><i class="fas fa-graduation-cap"></i> Results Checker</a></li>
+                    <li class="has-submenu" id="walletMenuLi">
+                        <a href="#" data-page="wallet" id="walletMenuLink">
+                            <i class="fas fa-wallet"></i> Wallet <i class="fas fa-chevron-down submenu-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="#" data-page="wallet-topup" id="walletSubmenuTopup"><i class="fas fa-dollar-sign"></i> Top Up</a></li>
+                            <li><a href="#" data-page="wallet-transactions" id="walletSubmenuTransactions"><i class="fas fa-receipt"></i> Transactions</a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- NEW: API Management Link -->
+                    <li>
+                        <a href="#" data-page="api-management">
+                            <i class="fas fa-key"></i> API Management <span class="api-badge">New</span>
+                        </a>
+                    </li>
+                 </ul>
+             </nav>
+        </aside>
+        <div class="overlay" id="overlay"></div>
+
+        <!-- Compact Become an Agent Modal Overlay -->
+        <div id="becomeAgentModalOverlay" aria-hidden="true">
+            <div class="become-agent-modal" role="dialog" aria-modal="true" aria-labelledby="becomeAgentTitle">
+                <button class="modal-close" id="closeBecomeAgentModalBtn" aria-label="Close">×</button>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="modal-icon"><i class="fas fa-user-tie"></i></div>
+                    <div style="flex:1;">
+                        <h3 id="becomeAgentTitle">Become an Agent</h3>
+                        <p>Join our agent network to earn commissions on sales. Apply now and we'll review your application.</p>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="dismissBecomeAgentBtn" class="btn btn-secondary">Maybe Later</button>
+                    <button id="applyBecomeAgentBtn" class="btn btn-primary">Apply Now</button>
+                </div>
+            </div>
+        </div>
+
+        <aside class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h3>Cart Items</h3>
+                <button class="cart-close-btn" id="cartCloseBtn" aria-label="Close cart"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="cart-items-container" id="cartItemsContainer">
+                <div class="cart-empty-message" id="cartEmptyMessage">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h4>Your Cart is Empty</h4>
+                    <p>Add some awesome bundles to get started!</p>
+                </div>
+            </div>
+            <div class="cart-footer" id="cartFooter" style="display:none;">
+                <div class="cart-total">
+                    <span class="label">Total:</span>
+                    <span class="amount" id="cartTotalAmount">GH₵ 0.00</span>
+                </div>
+                <button class="cart-checkout-btn" id="cartCheckoutBtn" disabled><i class="fas fa-cart-arrow-down"></i> Process Orders</button>
+            </div>
+        </aside>
+
+        <main class="main-content" id="mainContent">
+            <header class="header-bar">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menuToggle" aria-label="Open menu"> <i class="fas fa-bars"></i> </button>
+                    <h1 class="header-app-title" id="headerAppTitle">Dashboard</h1>
+                </div>
+                <div class="header-icons">
+                    <div class="header-icon-item notification-bell-container">
+                        <button class="notification-bell-btn" id="notificationBellBtn" aria-label="Notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" id="notificationBadge" style="display:none;">0</span>
+                        </button>
+                    </div>
+                    <a href="#" id="userProfileAvatarLink" class="user-profile-avatar-link" aria-label="User profile">
+                        <img src="https://i.postimg.cc/J4qL9dVH/IMG-20251120-092843-578-removebg-preview.png" alt="User Profile" class="profile-avatar-img" id="headerProfileAvatarImg">
+                    </a>
+                </div>
+            </header>
+
+            <div class="dashboard-page-content" id="mainDashboardPageContent">
+                <div class="skeleton-loader-container" id="skeletonLoader">
+                    <div class="skeleton skeleton-wallet"></div>
+                    <div class="skeleton-stats-grid"> <div class="skeleton skeleton-stat-card"></div> <div class="skeleton skeleton-stat-card"></div> <div class="skeleton skeleton-stat-card"></div> <div class="skeleton skeleton-stat-card"></div> </div>
+                    <div class="skeleton skeleton-wallet" style="height:200px; margin-top:20px;"></div>
+                </div>
+                <div class="content-wrapper" id="actualDashboardContent" style="display: none;">
+                    
+                    <!-- New: Dashboard Action Header with Become an Agent -->
+                    <div class="dashboard-actions-header">
+                        <button class="btn btn-primary" id="becomeAgentBtn">
+                            <i class="fas fa-user-tie"></i> Become an Agent
+                        </button>
+                        <button class="btn btn-excel-import" id="dashboardImportExcelBtn">
+                            <i class="fas fa-file-excel"></i> Import Excel
+                        </button>
+                        <button class="btn btn-input-orders" id="dashboardInputOrdersBtn">
+                            <i class="fas fa-keyboard"></i> Input Orders
+                        </button>
+                    </div>
+
+                    <div class="wallet-card animated-item" style="animation-delay: 0.1s;">
+                        <div class="wallet-info"> <h3>Wallet Balance</h3> <p class="wallet-balance" id="dashboardWalletBalanceDisplay">GH₵ 0.00</p> <p class="wallet-topup-text">Click + to top up your wallet</p> </div>
+                        <button class="topup-btn" id="dashboardTopUpBtn" aria-label="Top up wallet"> <i class="fas fa-plus"></i> </button>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card total animated-item" style="animation-delay: 0.2s;">
+                             <div class="stat-card-icon"><i class="fas fa-list-alt"></i></div>
+                             <div class="stat-card-info"><h4>Total Orders</h4><p id="statTotalOrders">0</p></div>
+                        </div>
+                        <div class="stat-card pending animated-item" style="animation-delay: 0.25s;">
+                             <div class="stat-card-icon"><i class="fas fa-clock"></i></div>
+                             <div class="stat-card-info"><h4>Pending Orders</h4><p id="statPendingOrders">0</p></div>
+                        </div>
+                        <div class="stat-card processing animated-item" style="animation-delay: 0.3s;">
+                             <div class="stat-card-icon"><i class="fas fa-sync-alt"></i></div>
+                             <div class="stat-card-info"><h4>Processing Orders</h4><p id="statProcessingOrders">0</p></div>
+                        </div>
+                        <div class="stat-card completed animated-item" style="animation-delay: 0.35s;">
+                             <div class="stat-card-icon"><i class="fas fa-check-circle"></i></div>
+                             <div class="stat-card-info"><h4>Completed Orders</h4><p id="statCompletedOrders">0</p></div>
+                        </div>
+                     </div>
+
+                    <!-- Quick Actions Section -->
+                    <div class="quick-actions-section animated-item" style="animation-delay: 0.4s;">
+                        <div class="quick-actions-header">
+                            <div class="quick-actions-header-left">
+                                <i class="fas fa-bolt"></i>
+                                <div>
+                                    <h2>Quick Actions</h2>
+                                    <p class="quick-actions-subtitle">Select an action to proceed</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="quick-actions-grid">
+                            <div class="quick-action-card top-up" id="quickActionTopUp">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <h3 class="quick-action-title">Top Up</h3>
+                                <p class="quick-action-description">Add funds to your wallet</p>
+                            </div>
+                            <div class="quick-action-card buy-data" id="quickActionBuyData">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </div>
+                                <h3 class="quick-action-title">Buy Data</h3>
+                                <p class="quick-action-description">Purchase data bundles</p>
+                            </div>
+                            <div class="quick-action-card orders" id="quickActionOrders">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-receipt"></i>
+                                </div>
+                                <h3 class="quick-action-title">Orders</h3>
+                                <p class="quick-action-description">View your orders</p>
+                            </div>
+                            <div class="quick-action-card payments" id="quickActionPayments">
+                                <div class="quick-action-icon">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <h3 class="quick-action-title">Payments</h3>
+                                <p class="quick-action-description">Transaction history</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Chart -->
+                    <div class="chart-container animated-item" style="animation-delay: 0.5s;">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-line"></i> Order Analytics</h3>
+                            <div class="chart-filter">
+                                <button class="chart-filter-btn active" data-period="week">Week</button>
+                                <button class="chart-filter-btn" data-period="month">Month</button>
+                                <button class="chart-filter-btn" data-period="year">Year</button>
+                            </div>
+                        </div>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="ordersChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="profile-settings-page-content" id="profileSettingsPageContent" style="display: none;">
+                <div class="profile-header-banner"> <h1>Profile Settings</h1> <span class="profile-active-badge" id="profileStatusBadge">Active</span> </div>
+                <div class="profile-details-card">
+                    <div id="profileViewMode">
+                        <div class="form-group"> <label>Full Name</label> <div class="form-value" id="profileFullNameDisplayValue">Loading...</div> </div>
+                        <div class="form-group"> <label>Email Address</label> <div class="form-value" id="profileEmailDisplayValue">Loading...</div> </div>
+                        <div class="form-group"> <label>Phone Number</label> <div class="form-value" id="profilePhoneNumberDisplayValue">Loading...</div> </div>
+                        <div class="form-group"> <label>Role</label> <div class="profile-role-display" id="profileRoleDisplayValue">Loading...</div> </div>
+                        <button class="profile-action-btn" id="editProfileBtn"><i class="fas fa-edit"></i> Edit Profile</button>
+                    </div>
+                    <div id="profileEditMode" style="display: none;">
+                         <div class="form-group"> <label for="profileEditFullName">Full Name</label> <input type="text" id="profileEditFullName"> </div>
+                         <div class="form-group"> <label for="profileEditEmail">Email Address</label> <input type="email" id="profileEditEmail" readonly> </div>
+                         <div class="form-group"> <label for="profileEditPhoneNumber">Phone Number</label> <input type="tel" id="profileEditPhoneNumber" placeholder="eg. 23324********" pattern="^233\d{9}$"> </div>
+                         <div class="profile-edit-actions">
+                             <button type="button" id="cancelProfileEditBtn" class="btn-cancel-profile"><i class="fas fa-times"></i> Cancel</button>
+                             <button type="button" id="saveProfileChangesBtn" class="btn-save-profile"><i class="fas fa-save"></i> Save Changes</button>
+                         </div>
+                    </div>
+                    <hr class="profile-section-divider">
+                    <div class="profile-security-section">
+                        <h3>Security</h3>
+                        <button class="profile-action-btn" id="changePasswordBtn">
+                            <i class="fas fa-key"></i> Change Password
+                        </button>
+
+                        <!-- 🔐 2FA Section -->
+                        <div class="two-fa-section" style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #046D8B;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <div>
+                                    <h4 style="margin: 0 0 5px 0; color: #2c3e50; font-size: 16px;">
+                                        <i class="fas fa-shield-alt" style="color: #046D8B;"></i> Two-Factor Authentication
+                                    </h4>
+                                    <p style="margin: 0; font-size: 13px; color: #7f8c8d;">Add an extra layer of security to your account</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="twoFAToggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div id="twoFAStatus" style="font-size: 12px; color: #95a5a6; margin-top: 8px;">
+                                <i class="fas fa-info-circle"></i> Status: <span id="twoFAStatusText">Disabled</span>
+                            </div>
+                            <div id="twoFAPhoneDisplay" style="display: none; font-size: 12px; color: #27ae60; margin-top: 5px;">
+                                <i class="fas fa-phone"></i> Protected number: <span id="twoFAPhoneNumber"></span>
+                            </div>
+                        </div>
+
+                        <!-- 🎫 Become Agent Button -->
+                        <button class="profile-action-btn" id="becomeAgentBtn" style="margin-top: 15px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border: none; color: white; display: none;">
+                            <i class="fas fa-ticket-alt"></i> Become an Agent
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NEW: Merchant Store Quick Actions -->
+                <div class="merchant-store-quick-actions-card">
+                    <div class="merchant-store-header">
+                        <h3><i class="fas fa-store"></i> Merchant Store</h3>
+                        <p class="subtitle">Manage your data reselling business</p>
+                    </div>
+                    <div class="merchant-actions-grid">
+                        <div class="merchant-action-card" data-page="store-setup">
+                            <div class="merchant-action-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <h4>Store Setup</h4>
+                            <p>Configure your store</p>
+                        </div>
+                        <div class="merchant-action-card" data-page="store-orders">
+                            <div class="merchant-action-icon">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <h4>Store Orders</h4>
+                            <p>View customer orders</p>
+                        </div>
+                        <div class="merchant-action-card" data-page="store-customers">
+                            <div class="merchant-action-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4>Store Customers</h4>
+                            <p>Manage customers</p>
+                        </div>
+                        <div class="merchant-action-card" data-page="add-product">
+                            <div class="merchant-action-icon">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <h4>Add Product</h4>
+                            <p>Add data packages</p>
+                        </div>
+                        <div class="merchant-action-card" data-page="view-products">
+                            <div class="merchant-action-icon">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+                            <h4>View Products</h4>
+                            <p>Manage your products</p>
+                        </div>
+                        <div class="merchant-action-card" data-page="payout">
+                            <div class="merchant-action-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <h4>Payout</h4>
+                            <p>Request withdrawals</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-account-security-card">
+                    <h3><i class="fas fa-shield-alt"></i> Account Security</h3>
+                    <p>For password changes or account modifications, please contact support directly for assistance.</p>
+                    <div class="profile-logout-btn-container">
+                         <button class="profile-action-btn" id="profileLogoutBtn" style="background-color: var(--danger-color); color:white;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="afa-registration-page-content" id="afaRegistrationPageContent" style="display: none;">
+                <div class="afa-register-btn-container animated-item" style="animation-delay: 0.1s;">
+                    <button class="afa-register-btn" id="showAfaEntryModalBtn"> <i class="fas fa-user-plus"></i> Register New AFA </button>
+                </div>
+
+                <h2 class="afa-history-section-title animated-item" style="animation-delay: 0.2s;">My AFA Registrations</h2>
+                <div class="afa-no-orders-view animated-item" id="afaNoOrdersView" style="animation-delay: 0.3s;">
+                    <div class="icon-placeholder"><i class="fas fa-id-card-alt"></i></div>
+                    <h3>No AFA Registrations Found</h3>
+                    <p>Your AFA registration history will appear here once you make any.</p>
+                </div>
+                <div class="afa-history-table-container professional-history-table-container animated-item" id="afaHistoryTableContainer" style="display: none; animation-delay: 0.3s;">
+                    <table class="professional-history-table" id="afaHistoryTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Full Name (AFA)</th>
+                                <th>Phone (AFA)</th>
+                                <th>Ghana Card</th>
+                                <th>Occupation</th>
+                                <th>Amount</th>
+                                <th>Date & Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="afaHistoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="history-page-content" id="historyPageContent" style="display: none;">
+                <div class="history-summary-cards">
+                    <div class="summary-card total-orders animated-item">
+                        <div class="summary-card-header"> <h3>Total Orders</h3> <div class="summary-card-icon"><i class="fas fa-list-alt"></i></div> </div>
+                        <div class="summary-card-body"> <span class="count" id="historyTotalOrdersCount">0</span><span class="count-label">total</span> <div class="amount" id="historyTotalOrdersAmount">GHS 0.00</div> </div>
+                        <div class="summary-progress-bar"> <div class="summary-progress-fill" id="historyTotalOrdersProgress" style="width: 0%;"></div> </div>
+                    </div>
+                    <div class="summary-card completed-orders animated-item" style="animation-delay: 0.1s;">
+                        <div class="summary-card-header"> <h3>Completed Orders</h3> <div class="summary-card-icon"><i class="fas fa-check-circle"></i></div> </div>
+                        <div class="summary-card-body"> <span class="count" id="historyCompletedOrdersCount">0</span><span class="count-label">total</span> <div class="amount" id="historyCompletedOrdersAmount">GHS 0.00</div> </div>
+                        <div class="summary-progress-bar"> <div class="summary-progress-fill" id="historyCompletedOrdersProgress" style="width: 0%;"></div> </div>
+                    </div>
+                </div>
+                <div class="history-no-orders animated-item" id="historyNoOrdersView" style="display: none; animation-delay: 0.3s;"> <div class="icon-placeholder"><i class="fas fa-receipt"></i></div> <h3>No Orders Found</h3> <p>We couldn't find any orders to display at the moment.</p> </div>
+                <div class="professional-history-table-container animated-item" id="historyOrdersListView" style="display: none; animation-delay: 0.3s;">
+                    <table class="professional-history-table" id="orderHistoryTable">
+                        <thead> <tr> <th>Order ID</th> <th>Type</th> <th>Network</th> <th>Phone Number</th> <th>Data Size</th><th>Amount</th> <th>Date & Time</th> <th>Status</th> <th>Actions</th></tr> </thead>
+                        <tbody id="orderHistoryTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="results-checker-page-content" id="resultsCheckerPageContent" style="display: none;">
+                <div class="results-checker-card">
+                    <h2>Results Checker</h2>
+                    <p class="description" style="text-align:center; color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                        Purchase BECE or WAEC result checker pins. The serial number and PIN will be displayed after successful purchase.
+                    </p>
+                    <div class="form-group">
+                        <label for="resultsCheckerTypeSelect">Select Checker Type</label>
+                        <select id="resultsCheckerTypeSelect">
+                            <option value="">-- Select Type --</option>
+                            <option value="BECE">BECE</option>
+                            <option value="WAEC">WAEC</option>
+                        </select>
+                    </div>
+                    <div class="results-checker-info" id="resultsCheckerPriceInfo" style="display:none;">
+                        Price: <strong id="resultsCheckerPriceDisplay">GHS 0.00</strong>
+                    </div>
+                    <button class="btn btn-primary btn-purchase-serial" id="purchaseCheckerSerialBtn" disabled>Purchase Serial/PIN</button>
+                </div>
+            </div>
+
+            <div class="wallet-page-content" id="walletPageContent" style="display: none;">
+                <div class="wallet-summary-cards">
+                    <div class="summary-card pending-topups animated-item">
+                        <div class="summary-card-header"> <h3>Pending Top-ups</h3> <div class="summary-card-icon"><i class="fas fa-clock"></i></div> </div>
+                        <div class="summary-card-body"> <span class="count" id="walletPendingTopupsCount">0</span><span class="count-label">total</span> <div class="amount" id="walletPendingTopupsAmount">GHS 0.00</div> </div>
+                        <div class="summary-progress-bar"> <div class="summary-progress-fill" id="walletPendingTopupsProgress" style="width: 0%;"></div> </div>
+                    </div>
+                    <div class="summary-card completed-topups animated-item" style="animation-delay: 0.1s;">
+                        <div class="summary-card-header"> <h3>Completed Top-ups</h3> <div class="summary-card-icon"><i class="fas fa-check-circle"></i></div> </div>
+                        <div class="summary-card-body"> <span class="count" id="walletCompletedTopupsCount">0</span><span class="count-label">total</span> <div class="amount" id="walletCompletedTopupsAmount">GHS 0.00</div> </div>
+                        <div class="summary-progress-bar"> <div class="summary-progress-fill" id="walletCompletedTopupsProgress" style="width: 0%;"></div> </div>
+                    </div>
+                </div>
+                <div class="topup-history-section animated-item" style="animation-delay: 0.2s;">
+                    <h2>My Top-up History</h2>
+                    <div class="topup-history-filter"> <select id="walletTopupHistoryFilter"> <option value="all_time">All Time</option> <option value="today" selected>Today</option> <option value="last_7_days">Last 7 Days</option> <option value="last_30_days">Last 30 Days</option> </select> </div>
+                    <div class="topup-history-table">
+                        <div class="topup-history-header">
+                            <div class="date-col">DATE & TIME</div>
+                            <div class="reference-col">REFERENCE</div>
+                            <div class="amount-col">AMOUNT</div>
+                            <div class="status-col">STATUS</div>
+                        </div>
+                        <div id="walletTopupHistoryList"></div>
+                    </div>
+                    <div class="no-topup-history" id="noWalletTopupHistoryView" style="display: none;"> <div class="icon-placeholder"><i class="fas fa-history"></i></div> <h3>No Top-up History</h3> <p>You haven't made any top-ups yet for the selected period.</p> </div>
+                </div>
+            </div>
+
+            <!-- NEW: API Management Page Content -->
+            <div class="api-management-page-content animated-item" id="apiManagementPageContent" style="display: none;">
+                <div class="back-to-dashboard-btn-container" style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" id="apiBackToDashboardBtn" style="background-color: #6c757d; color: white;">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </button>
+                </div>
+
+                <h2><i class="fas fa-key"></i> API Management</h2>
+
+                <div id="apiAccessDisabledBlock" class="api-section api-access-disabled" style="display: none;">
+                    <i class="icon-warning fas fa-exclamation-triangle"></i>
+                    <p>API Access Disabled</p>
+                    <p>Contact support to enable API access</p>
+                    <button class="btn-contact-support" id="contactSupportApiBtn">
+                        <i class="fas fa-envelope"></i> Contact Support
+                    </button>
+                </div>
+
+                 <div id="apiReadyBlock" class="api-section api-ready-block" style="display: none;">
+                    <i class="api-ready-icon fas fa-check-square"></i>
+                    <p class="api-ready-text">API Ready</p>
+                    <p class="api-ready-text">Your API is active and ready to use</p>
+                </div>
+
+                <div id="apiKeySection" class="api-section" style="display: none;">
+                    <div class="api-key-not-generated" id="apiKeyNotGenerated" style="display: none;">
+                        <div class="icon-key"><i class="fas fa-key"></i></div>
+                        <p>No API Key Generated</p>
+                        <p>Generate an API key to start integrating with external applications</p>
+                        <button class="btn-generate-key" id="generateApiKeyBtn">
+                            <i class="fas fa-plus"></i> Generate API Key
+                        </button>
+                        <p class="api-key-disabled-message" id="apiKeyDisabledMessage" style="display: none;">API access must be enabled first</p>
+                    </div>
+
+                    <div class="api-key-generated" id="apiKeyGenerated" style="display: none;">
+                        <h3><i class="fas fa-key"></i> Your API Key</h3>
+                        <div class="api-key-display-area">
+                            <input type="password" id="userApiKeyDisplay" readonly value="••••••••••••••••••••••••••••••••">
+                            <button class="api-key-view-toggle" id="apiViewToggleBtn"><i class="fas fa-eye"></i></button>
+                            <button class="btn-copy" id="copyUserApiKeyBtn"><i class="fas fa-copy"></i></button>
+                        </div>
+                        <p class="api-key-date" id="apiKeyGeneratedDate">Generated: N/A</p>
+                        <div class="api-key-warning-block">
+                             <i class="fas fa-exclamation-triangle"></i>
+                             <span>Regenerating will invalidate the current key</span>
+                        </div>
+                         <button class="btn-generate-key" id="regenerateApiKeyBtn" style="margin-top: 15px;">
+                            <i class="fas fa-sync-alt"></i> Regenerate API Key
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Provider Configuration moved to Admin Panel (paneladmin.html) -->
+
+                <div id="usageStatsSection" class="api-section usage-stats">
+                    <h3><i class="fas fa-chart-bar"></i> Usage Stats</h3>
+                    <div class="usage-stats-grid">
+                        <div class="usage-stat-box">
+                            <div class="stat-icon"><i class="fas fa-globe"></i></div>
+                            <div class="stat-value" id="statTotalRequests">0</div>
+                            <div class="stat-label">Total Requests</div>
+                        </div>
+                        <div class="usage-stat-box">
+                            <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+                            <div class="stat-value" id="statTodayRequests">0</div>
+                            <div class="stat-label">Today</div>
+                        </div>
+                        <div class="usage-stat-box">
+                            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                            <div class="stat-value" id="statThisHourRequests">0/100</div>
+                            <div class="stat-label">This Hour</div>
+                        </div>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 15px;">
+                        Note: Usage stats require a backend system to track API calls. These values are placeholders for a Firestore-only setup.
+                    </p>
+                </div>
+
+                <div id="documentationSection" class="api-section documentation">
+                    <div class="doc-card-header">
+                        <div class="doc-card-main-title">
+                            <div class="doc-card-icon"><i class="fas fa-book-open"></i></div>
+                            API Documentation
+                        </div>
+                        <span class="doc-version-badge">v2.0</span>
+                    </div>
+                    <p class="doc-description">Complete integration guide for developers</p>
+                    <ul class="doc-links-list">
+                        <li><a href="#" class="doc-link-item" data-doc-type="authentication"><i class="fas fa-lock"></i> <span>Authentication</span></a></li>
+                        <li><a href="#" class="doc-link-item" data-doc-type="code-examples"><i class="fas fa-code"></i> <span>Code Examples</span></a></li>
+                        <li><a class="doc-link-item" data-doc-type="all-endpoints" style="cursor: default;"><i class="fas fa-rocket"></i> <span>All Endpoints</span></a></li>
+                        <li><a class="doc-link-item" data-doc-type="error-handling" style="cursor: default;"><i class="fas fa-exclamation-triangle"></i> <span>Error Handling</span></a></li>
+                    </ul>
+                </div>
+
+                <div class="api-section api-information">
+                    <h3><i class="fas fa-info-circle" style="color: var(--api-info-icon-color);"></i> API Information</h3>
+                    <div class="api-info-item">
+                        <i class="fas fa-link"></i> <span class="label">BASE URL:</span> <span class="value" id="apiBaseUrl">https://data4less.site/api/</span>
+                    </div>
+                    <div class="api-info-item">
+                        <i class="fas fa-shield-alt"></i> <span class="label">AUTHENTICATION:</span> <span class="value">X-API-Key: YOUR_API_KEY</span>
+                    </div>
+                    <div class="api-info-item">
+                        <i class="fas fa-tachometer-alt"></i> <span class="label">RATE LIMIT:</span> <span class="value">100 requests/minute (subject to change)</span>
+                    </div>
+                     <div class="api-data-bundle-structure-info">
+                        <h4>Data Bundle Purchase Request Structure:</h4>
+                        <pre><code>{
+  "network": "MTN" | "TELECEL" | "AT",
+  "phoneNumber": "23324xxxxxxx",
+  "packageId": "unique_package_id_from_services_endpoint"
+}</code></pre>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 10px;">
+                            The `packageId` can be retrieved from the `/api/services` endpoint.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="api-section available-endpoints">
+                    <h3><i class="fas fa-code"></i> Available Endpoints</h3>
+                    <ul class="available-endpoints-list">
+                        <li><span class="endpoint-method get">GET</span> `/api/status`</li>
+                        <li><span class="endpoint-method get">GET</span> `/api/wallet/balance`</li>
+                        <li><span class="endpoint-method get">GET</span> `/api/services`</li>
+                        <li><span class="endpoint-method post">POST</span> `/api/data/purchase`</li>
+                        <li><span class="endpoint-method post">POST</span> `/api/afa/register`</li>
+                        <li><span class="endpoint-method get">GET</span> `/api/orders/{ref}/status`</li>
+                    </ul>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 15px;">
+                       
+                    </p>
+                </div>
+
+                <div class="api-section support-contact">
+                    <h3><i class="fas fa-headset"></i> Support & Contact</h3>
+                    <div class="support-contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <div class="contact-info">
+                            <span>Email Support</span>
+                            <a href="mailto:pseudocode461@gmail.com">pseudocode461@gmail.com</a>
+                        </div>
+                    </div>
+                    <div class="support-contact-item">
+                        <i class="fab fa-whatsapp"></i>
+                        <div class="contact-info">
+                            <span>WhatsApp</span>
+                            <a href="https://wa.me/233508591189" target="_blank">+233 50 859 1189</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="api-section security-best-practices">
+                    <h3><i class="fas fa-lock"></i> Security Best Practices</h3>
+                    <ul>
+                        <li><i class="fas fa-ban"></i> Never share your API key publicly</li>
+                        <li><i class="fas fa-lock"></i> Store your API key securely in environment variables</li>
+                        <li><i class="fas fa-shield-alt"></i> Always use HTTPS for production requests</li>
+                        <li><i class="fas fa-chart-line"></i> Monitor your API usage regularly</li>
+                        <li><i class="fas fa-redo-alt"></i> Regenerate key immediately if compromised</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- MODIFIED: Packages Page Content with "Buy Now" buttons -->
+            <div class="packages-page-content" id="packagesPageContent" style="display: none;">
+                <div class="section-header animated-item" style="animation-delay: 0.1s;">
+                    <h2>Packages</h2>
+                    <span>Select a network </span>
+                </div>
+
+                <div class="package-category-tabs animated-item" style="animation-delay: 0.2s;">
+                    <button class="tab-button active" data-network="mtn">MTN</button>
+                    <button class="tab-button" data-network="telecel">Telecel</button>
+                    <button class="tab-button" data-network="at">AT(ishare)</button>
+                    <button class="tab-button" data-network="afa_mins">AFA mins</button>
+                </div>
+
+                <div class="package-offers-grid" id="packageOffersGrid">
+                    <!-- Data bundle cards will be loaded here by JavaScript -->
+                    <p style="text-align: center; color: var(--text-muted); grid-column: 1 / -1;">Select a network to view packages.</p>
+                </div>
+                 <div class="no-packages-view animated-item" id="noPackagesView" style="display: none; text-align:center; padding: 30px; background-color: var(--card-bg); border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); margin-top: 20px;">
+                    <div class="icon-placeholder" style="font-size: 48px; color: var(--border-color); margin-bottom: 15px;"><i class="fas fa-box-open"></i></div>
+                    <h3>No Data Bundles Available</h3>
+                    <p>It looks like there are no bundles to display for this network at the moment. Please check back later!</p>
+                </div>
+            </div>
+
+            <!-- NEW: Store Setup Page -->
+            <div class="store-setup-page-content" id="storeSetupPageContent" style="display: none;">
+                <div class="store-setup-header">
+                    <h2><i class="fas fa-store"></i> Store Setup</h2>
+                    <p class="subtitle">Configure your merchant store to start selling data bundles</p>
+                </div>
+
+                <!-- Progress Steps -->
+                <div class="setup-progress-steps">
+                    <div class="progress-step active" data-step="1">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Store Info</div>
+                    </div>
+                    <div class="progress-step" data-step="2">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Branding</div>
+                    </div>
+                    <div class="progress-step" data-step="3">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Business Hours</div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Store Information -->
+                <div class="setup-step-container" id="setupStep1">
+                    <div class="setup-card">
+                        <h3><i class="fas fa-info-circle"></i> Store Information</h3>
+                        <form id="storeInfoForm">
+                            <div class="form-group">
+                                <label for="storeName">Store Name <span class="required">*</span></label>
+                                <input type="text" id="storeName" placeholder="e.g., MaxJay Data" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="storeSlug">Store Slug <span class="required">*</span></label>
+                                <input type="text" id="storeSlug" placeholder="e.g., maxjay-data" required>
+                                <small>Your store will be available at: <strong id="storeUrlPreview">gigsplan.com/store/your-slug</strong></small>
+                            </div>
+                            <div class="form-group">
+                                <label for="brandLogo">Brand Logo <span class="required">*</span></label>
+                                <input type="file" id="brandLogoFile" accept="image/*" required>
+                                <small>Upload your store logo (PNG, JPG, GIF - Max 2MB)</small>
+                                <div id="logoPreview" style="margin-top: 10px; display: none;">
+                                    <img id="logoPreviewImg" src="" alt="Logo Preview" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #e0e0e0;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactEmail">Contact Email <span class="required">*</span></label>
+                                <input type="email" id="contactEmail" placeholder="support@yourstore.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contactPhone">Contact Phone <span class="required">*</span></label>
+                                <input type="tel" id="contactPhone" placeholder="0241234567" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="storeSlogan">Store Slogan</label>
+                                <input type="text" id="storeSlogan" placeholder="Your affordable data source">
+                            </div>
+                        </form>
+                        <div class="setup-actions">
+                            <button class="btn-next" id="step1Next"><i class="fas fa-arrow-right"></i> Next Step</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Store Branding -->
+                <div class="setup-step-container" id="setupStep2" style="display: none;">
+                    <div class="setup-card">
+                        <h3><i class="fas fa-palette"></i> Store Branding</h3>
+                        <form id="storeBrandingForm">
+                            <div class="form-group">
+                                <label for="primaryColor">Primary Color <span class="required">*</span></label>
+                                <div class="color-input-group">
+                                    <input type="color" id="primaryColor" value="#0066FF" required>
+                                    <input type="text" id="primaryColorHex" value="#0066FF" readonly>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="secondaryColor">Secondary Color <span class="required">*</span></label>
+                                <div class="color-input-group">
+                                    <input type="color" id="secondaryColor" value="#25D366" required>
+                                    <input type="text" id="secondaryColorHex" value="#25D366" readonly>
+                                </div>
+                            </div>
+                            <div class="color-preview-box">
+                                <h4>Color Preview</h4>
+                                <div class="preview-buttons">
+                                    <button type="button" class="preview-btn primary-preview">Primary Button</button>
+                                    <button type="button" class="preview-btn secondary-preview">Secondary Button</button>
+                                </div>
+                            </div>
+
+                            <div class="form-section-divider" style="margin: 30px 0; border-top: 2px solid #e0e0e0;"></div>
+                            <h4 style="margin-bottom: 20px; color: #333;"><i class="fas fa-network-wired"></i> Network Logos (Optional)</h4>
+                            <p style="margin-bottom: 20px; font-size: 14px; color: #666;">Upload custom logos for each network. If not provided, default logos will be used.</p>
+
+                            <div class="form-group">
+                                <label for="mtnLogoFile">MTN Logo</label>
+                                <input type="file" id="mtnLogoFile" accept="image/*">
+                                <small>Custom MTN logo for your store (Optional)</small>
+                                <div id="mtnLogoPreview" style="margin-top: 10px; display: none;">
+                                    <img id="mtnLogoPreviewImg" src="" alt="MTN Logo Preview" style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid #FFCC00;">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="telecelLogoFile">Telecel Logo</label>
+                                <input type="file" id="telecelLogoFile" accept="image/*">
+                                <small>Custom Telecel logo for your store (Optional)</small>
+                                <div id="telecelLogoPreview" style="margin-top: 10px; display: none;">
+                                    <img id="telecelLogoPreviewImg" src="" alt="Telecel Logo Preview" style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid #E20016;">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="airtelTigoLogoFile">AirtelTigo Logo</label>
+                                <input type="file" id="airtelTigoLogoFile" accept="image/*">
+                                <small>Custom AirtelTigo logo for your store (Optional)</small>
+                                <div id="airtelTigoLogoPreview" style="margin-top: 10px; display: none;">
+                                    <img id="airtelTigoLogoPreviewImg" src="" alt="AirtelTigo Logo Preview" style="max-width: 100px; max-height: 100px; border-radius: 8px; border: 2px solid #004F9F;">
+                                </div>
+                            </div>
+                        </form>
+                        <div class="setup-actions">
+                            <button class="btn-back" id="step2Back"><i class="fas fa-arrow-left"></i> Back</button>
+                            <button class="btn-next" id="step2Next">Next Step <i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Business Hours -->
+                <div class="setup-step-container" id="setupStep3" style="display: none;">
+                    <div class="setup-card">
+                        <h3><i class="fas fa-clock"></i> Business Hours</h3>
+                        <form id="businessHoursForm">
+                            <div class="form-group">
+                                <label for="openingTime">Opening Time <span class="required">*</span></label>
+                                <input type="time" id="openingTime" value="08:00" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="closingTime">Closing Time <span class="required">*</span></label>
+                                <input type="time" id="closingTime" value="20:00" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Working Days <span class="required">*</span></label>
+                                <div class="working-days-selector">
+                                    <label class="day-checkbox"><input type="checkbox" name="workingDays" value="monday" checked> Monday</label>
+                                    <label class="day-checkbox"><input type="checkbox" name="workingDays" value="tuesday" checked> Tuesday</label>
+                                    <label class="day-checkbox"><input type="checkbox" name="workingDays" value="wednesday" checked> Wednesday</label>
+                                    <label class="day-checkbox"><input type="checkbox" name="workingDays" value="thursday" checked> Thursday</label>
+                                    <label class="day-checkbox"><input type="checkbox" name="workingDays" value="friday" checked> Friday</label>
+                                    <label class="day-checkbox"><input type="checkbox" name="workingDays" value="saturday" checked> Saturday</label>
+                                    <label class="day-checkbox"><input type="checkbox" name="workingDays" value="sunday"> Sunday</label>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="setup-actions">
+                            <button class="btn-back" id="step3Back"><i class="fas fa-arrow-left"></i> Back</button>
+                            <button class="btn-save" id="saveStoreSetup"><i class="fas fa-save"></i> Save Store Setup</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Store Link Display (After Save) -->
+                <div class="store-link-display" id="storeLinkDisplay" style="display: none;">
+                    <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+                    <h3>Store Setup Complete!</h3>
+                    <p>Your store is now live and ready to accept orders</p>
+                    <div class="store-link-box">
+                        <label>Your Store Link:</label>
+                        <div class="link-copy-group">
+                            <input type="text" id="generatedStoreLink" readonly value="">
+                            <button class="btn-copy-link" id="copyStoreLinkBtn"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                    </div>
+                    <div class="link-actions">
+                        <a href="#" id="visitStoreBtn" target="_blank" class="btn-visit-store"><i class="fas fa-external-link-alt"></i> Visit Store</a>
+                        <button class="btn-edit-setup" id="editSetupBtn"><i class="fas fa-edit"></i> Edit Setup</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW: Store Orders Page -->
+            <div class="store-orders-page-content" id="storeOrdersPageContent" style="display: none;">
+                <h2><i class="fas fa-shopping-bag"></i> Store Orders</h2>
+
+                <!-- Orders Stats -->
+                <div class="store-stats-grid">
+                    <div class="store-stat-card">
+                        <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                        <div class="stat-info">
+                            <h4>Total Orders</h4>
+                            <p class="stat-value" id="storeOrdersTotal">0</p>
+                        </div>
+                    </div>
+                    <div class="store-stat-card">
+                        <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <h4>Pending</h4>
+                            <p class="stat-value" id="storeOrdersPending">0</p>
+                        </div>
+                    </div>
+                    <div class="store-stat-card">
+                        <div class="stat-icon completed"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <h4>Completed</h4>
+                            <p class="stat-value" id="storeOrdersCompleted">0</p>
+                        </div>
+                    </div>
+                    <div class="store-stat-card">
+                        <div class="stat-icon revenue"><i class="fas fa-dollar-sign"></i></div>
+                        <div class="stat-info">
+                            <h4>Total Revenue</h4>
+                            <p class="stat-value" id="storeOrdersRevenue">GHS 0.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Table -->
+                <div class="store-orders-table-container">
+                    <table class="store-orders-table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Product</th>
+                                <th>Phone</th>
+                                <th>Amount</th>
+                                <th>Profit</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="storeOrdersTableBody">
+                            <tr class="no-data-row">
+                                <td colspan="8">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-inbox"></i>
+                                        <p>No orders yet</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- NEW: Store Customers Page -->
+            <div class="store-customers-page-content" id="storeCustomersPageContent" style="display: none;">
+                <h2><i class="fas fa-users"></i> Store Customers</h2>
+
+                <!-- Customer Stats -->
+                <div class="store-stats-grid">
+                    <div class="store-stat-card">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <h4>Total Customers</h4>
+                            <p class="stat-value" id="storeCustomersTotal">0</p>
+                        </div>
+                    </div>
+                    <div class="store-stat-card">
+                        <div class="stat-icon active"><i class="fas fa-user-check"></i></div>
+                        <div class="stat-info">
+                            <h4>Active Customers</h4>
+                            <p class="stat-value" id="storeCustomersActive">0</p>
+                        </div>
+                    </div>
+                    <div class="store-stat-card">
+                        <div class="stat-icon revenue"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-info">
+                            <h4>Avg Order Value</h4>
+                            <p class="stat-value" id="storeCustomersAvgOrder">GHS 0.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customers Table -->
+                <div class="store-customers-table-container">
+                    <table class="store-customers-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Total Orders</th>
+                                <th>Total Spent</th>
+                                <th>Last Order</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="storeCustomersTableBody">
+                            <tr class="no-data-row">
+                                <td colspan="6">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-users-slash"></i>
+                                        <p>No customers yet</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- NEW: Add Product Page -->
+            <div class="add-product-page-content" id="addProductPageContent" style="display: none;">
+                <h2><i class="fas fa-plus-circle"></i> Add Products to Your Store</h2>
+                <p class="page-subtitle">Select data packages and set your selling prices</p>
+
+                <!-- Network Tabs -->
+                <div class="product-network-tabs">
+                    <button class="product-tab-btn active" data-network="mtn">MTN</button>
+                    <button class="product-tab-btn" data-network="telecel">Telecel</button>
+                    <button class="product-tab-btn" data-network="at">AT (iShare)</button>
+                </div>
+
+                <!-- Available Packages Table -->
+                <div class="available-packages-table-container">
+                    <table class="available-packages-table">
+                        <thead>
+                            <tr>
+                                <th>Package</th>
+                                <th>Network</th>
+                                <th>Cost Price</th>
+                                <th class="agent-price-header">Your Selling Price</th> <!-- Changed for agent pricing -->
+                                <th>Profit Margin</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="availablePackagesTableBody">
+                            <tr class="no-data-row">
+                                <td colspan="6">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-box-open"></i>
+                                        <p>Loading packages...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- NEW: View Products Page -->
+            <div class="view-products-page-content" id="viewProductsPageContent" style="display: none;">
+                <div class="view-products-header">
+                    <h2><i class="fas fa-box-open"></i> My Store Products</h2>
+                    <button class="btn-add-more" id="addMoreProductsBtn"><i class="fas fa-plus"></i> Add More</button>
+                </div>
+
+                <!-- Products Table -->
+                <div class="view-products-table-container">
+                    <table class="view-products-table">
+                        <thead>
+                            <tr>
+                                <th>Package</th>
+                                <th>Network</th>
+                                <th>Cost Price</th>
+                                <th class="agent-price-header">Selling Price</th> <!-- Changed for agent pricing -->
+                                <th>Profit</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="viewProductsTableBody">
+                            <tr class="no-data-row">
+                                <td colspan="7">
+                                    <div class="no-data-message">
+                                        <i class="fas fa-box"></i>
+                                        <p>No products added yet</p>
+                                        <button class="btn-start-adding" id="startAddingBtn">Start Adding Products</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- NEW: Payout Page -->
+            <div class="payout-page-content" id="payoutPageContent" style="display: none;">
+                <h2><i class="fas fa-money-bill-wave"></i> Store Payout</h2>
+
+                <!-- Revenue Stats -->
+                <div class="payout-stats-grid">
+                    <div class="payout-stat-card primary">
+                        <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+                        <div class="stat-info">
+                            <h4>Available Balance</h4>
+                            <p class="stat-value" id="payoutAvailableBalance">GHS 0.00</p>
+                        </div>
+                    </div>
+                    <div class="payout-stat-card">
+                        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-info">
+                            <h4>Total Revenue</h4>
+                            <p class="stat-value" id="payoutTotalRevenue">GHS 0.00</p>
+                        </div>
+                    </div>
+                    <div class="payout-stat-card">
+                        <div class="stat-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                        <div class="stat-info">
+                            <h4>Total Withdrawn</h4>
+                            <p class="stat-value" id="payoutTotalWithdrawn">GHS 0.00</p>
+                        </div>
+                    </div>
+                    <div class="payout-stat-card">
+                        <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                        <div class="stat-info">
+                            <h4>Pending Payout</h4>
+                            <p class="stat-value" id="payoutPending">GHS 0.00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Withdraw Section -->
+                <div class="withdraw-section">
+                    <div class="withdraw-card">
+                        <h3><i class="fas fa-hand-holding-usd"></i> Request Withdrawal</h3>
+                        <p class="withdraw-note">Minimum withdrawal amount: <strong>GHS 5.00</strong></p>
+                        <div class="withdraw-form">
+                            <div class="form-group">
+                                <label for="withdrawAmount">Amount to Withdraw</label>
+                                <input type="number" id="withdrawAmount" placeholder="Enter amount" min="5" step="0.01">
+                            </div>
+                            <button class="btn-withdraw" id="requestWithdrawBtn" disabled>
+                                <i class="fas fa-paper-plane"></i> Request Withdrawal
+                            </button>
+                        </div>
+                        <div class="balance-warning" id="balanceWarning" style="display: none;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Insufficient balance or amount below minimum</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Withdrawal History -->
+                <div class="withdrawal-history-section">
+                    <h3><i class="fas fa-history"></i> Withdrawal History</h3>
+                    <div class="withdrawal-history-table-container">
+                        <table class="withdrawal-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Amount</th>
+                                    <th>Date Requested</th>
+                                    <th>Status</th>
+                                    <th>Date Paid</th>
+                                </tr>
+                            </thead>
+                            <tbody id="withdrawalHistoryTableBody">
+                                <tr class="no-data-row">
+                                    <td colspan="5">
+                                        <div class="no-data-message">
+                                            <i class="fas fa-receipt"></i>
+                                            <p>No withdrawal history</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+            <footer class="app-footer animated-item" style="animation-delay: 0.3s;"> &copy; <span id="currentYear"></span> gigsplan. All rights reserved. </footer>
+        </main>
+    </div>
+    <!-- Floating Cart FAB Icon - Hidden (not using cart for direct purchases) -->
+    <!-- <a href="#" class="fab dashboard-fab" id="cartFab" aria-label="View cart"> <i class="fas fa-shopping-cart"></i> <span class="fab-badge" id="cartFabBadge">0</span> </a> -->
+
+    <!-- Modals -->
+    <div class="toast" id="toastNotification"> <i class="fas fa-check-circle"></i> <div class="toast-content"> <h4 id="toastTitle">Success</h4> <p id="toastMessage">Operation successful!</p> </div> <div class="toast-progress"> <div class="toast-progress-bar" id="toastProgressBar"></div> </div> </div>
+
+    <!-- Updated TopUpModalOverlay -->
+    <div class="modal-overlay" id="topUpModalOverlay">
+        <div class="modal-content-box topup-modal">
+            <div class="modal-header">
+                <h2>Wallet Top-up</h2>
+                <button class="modal-close-btn" data-close-modal="topUpModalOverlay">&times;</button>
+            </div>
+            <div class="topup-modal-content">
+                <h3>Top Up Your Wallet</h3>
+                <div class="current-balance-block">
+                    <div class="balance-icon"><i class="fas fa-wallet"></i></div>
+                    <div class="balance-info">
+                        <span class="label">Current Balance</span>
+                        <span class="amount" id="modalCurrentBalance">GHS 0.00</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="topUpAmount">Amount to Top Up (GHS)</label>
+                    <input type="number" id="topUpAmount" placeholder="Min GHS 30.00" value="" min="30" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Method</label>
+                    <div class="topup-method-selector">
+                        <!-- Manual top-up hidden, only Instant (Paystack) available -->
+                        <button class="btn topup-method-btn active" data-method="paystack" style="width: 100%; background: var(--primary-green); color: white;">Instant Top-Up (Paystack)</button>
+                    </div>
+                </div>
+                <small id="paystackInfo" style="display:block; font-size:11px; color: var(--text-muted); margin-bottom: 10px;">You will be redirected to Paystack to complete your payment securely.</small>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" data-close-modal="topUpModalOverlay">Cancel</button>
+                <button class="btn-proceed" id="topUpModalProceedBtn">Proceed with Instant Top-Up</button>
+            </div>
+        </div>
+    </div>
+    <!-- End of Updated TopUpModalOverlay -->
+
+    <div class="modal-overlay" id="momoPaymentDetailsModalOverlay">
+        <div class="modal-content-box momo-payment-modal-content">
+            <div class="modal-header">
+                <h2 id="momoPaymentModalHeaderTitle">Payment Details</h2>
+                <button class="modal-close-btn" data-close-modal="momoPaymentDetailsModalOverlay" id="momoPaymentModalCloseBtn">&times;</button>
+            </div>
+            <div class="momo-payment-modal-body">
+                <!-- MODIFICATION: Updated Instructions -->
+                <p class="momo-payment-instructions">
+                    Please send the top-up amount to the details below:<br>
+                    <strong style="display: block; margin-top: 8px;">📌 Important:</strong>
+                    <ul style="padding-left: 20px; margin-top: 5px; font-size: 12px; list-style-type: '✔ ';">
+                        <li style="margin-bottom: 5px;">Use the reference code provided for your payment.</li>
+                        <li style="margin-bottom: 5px;">Make payment <strong>before</strong> you click the "I have paid" button.</li>
+                    </ul>
+                    For assistance, contact us on WhatsApp: <a href="https://wa.me/233552202292" target="_blank" style="color: var(--primary-green); font-weight:500;">+233 55 220 2292</a>.
+                </p>
+                <div class="momo-detail-item"> <span class="momo-detail-label">Account Name:</span> <span class="momo-detail-value copyable" id="momoAccountName" title="Click to copy">Joyce Akyaa <i class="fas fa-copy copy-icon"></i></span> </div>
+                <div class="momo-detail-item"> <span class="momo-detail-label">MoMo Number:</span> <span class="momo-detail-value copyable" id="momoAccountNumber" title="Click to copy">0552202292 <i class="fas fa-copy copy-icon"></i></span> </div>
+                <div class="momo-detail-item"> <span class="momo-detail-label">Reference Code:</span> <span class="momo-detail-value copyable" id="momoReferenceCode" title="Click to copy">Loading... <i class="fas fa-copy copy-icon"></i></span> </div>
+                <div class="momo-detail-item"> <span class="momo-detail-label">Top-up Amount:</span> <span class="momo-detail-value" id="momoTopupAmount">GHS 0.00</span> </div>
+            </div>
+            <div class="modal-actions momo-payment-modal-actions">
+                <button class="btn-proceed" id="momoCompletePaymentBtn"><i class="fas fa-check-circle"></i> I've Made Payment</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="afaEntryModalOverlay"> <div class="modal-content-box afa-entry-modal"> <div class="modal-header"> <h2>AFA Registration</h2> <button class="modal-close-btn" data-close-modal="afaEntryModalOverlay">&times;</button> </div> <form id="afaEntryForm"> <div class="form-group"> <label for="afaFullName">Full Name <span class="required-star">*</span></label> <input type="text" id="afaFullName" placeholder="Enter your full name" required> </div> <div class="form-group"> <label for="afaPhoneNumber">Phone Number <span class="required-star">*</span></label> <input type="tel" id="afaPhoneNumber" placeholder="Enter your phone number" required> </div> <div class="form-group"> <label for="afaGhanaCard">Ghana Card Number <span class="required-star">*</span></label> <input type="text" id="afaGhanaCard" placeholder="Enter your Ghana card number" required> </div> <div class="form-group"> <label for="afaOccupation">Occupation</label> <input type="text" id="afaOccupation" placeholder="Enter your occupation"> </div> <div class="form-group"> <label for="afaDateOfBirth">Date of Birth <span class="required-star">*</span></label> <input type="date" id="afaDateOfBirth" required max="2008-01-01"> </div> </form> <div class="modal-actions afa-modal-actions"> <button type="button" class="btn-cancel" data-close-modal="afaEntryModalOverlay"><i class="fas fa-times"></i> Cancel</button> <button type="submit" form="afaEntryForm" id="afaSubmitBtn" class="btn-save"><i class="fas fa-save"></i> Save (Cost: GHS <span id="afaFeeDisplay">0.00</span>)</button> </div> </div> </div>
+    
+    <div class="modal-overlay" id="changePasswordModalOverlay"> <div class="modal-content-box"> <div class="modal-header"> <h2>Change Password</h2> <button class="modal-close-btn" data-close-modal="changePasswordModalOverlay">&times;</button> </div> <form id="changePasswordForm" style="margin-top: 10px;"> <div class="form-group"> <label for="currentPassword">Current Password</label> <input type="password" id="currentPassword" placeholder="Enter your current password" required> </div> <div class="form-group"> <label for="newPassword">New Password</label> <input type="password" id="newPassword" placeholder="Enter new password (min. 6 characters)" required minlength="6"> </div> <div class="form-group"> <label for="confirmNewPassword">Confirm New Password</label> <input type="password" id="confirmNewPassword" placeholder="Confirm new password" required> </div> </form> <div class="modal-actions"> <button type="button" class="btn-cancel" data-close-modal="changePasswordModalOverlay">Cancel</button> <button type="button" class="btn-proceed" id="saveNewPasswordBtn">Save Password</button> </div> </div> </div>
+
+    <div class="modal-overlay" id="orderSuccessModalOverlay">
+        <div class="modal-content-box">
+            <div class="order-success-icon" id="generalOrderSuccessIconContainer">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="order-success-icon-paperplane" id="messageSendingSuccessIconContainer" style="display:none;">
+                 <i class="fas fa-paper-plane"></i>
+            </div>
+            <h2 id="orderSuccessTitle">Order Successful!</h2>
+            <p id="orderSuccessMessage">Your order has been submitted and is processing.</p>
+            <div class="modal-actions">
+                <button class="btn-proceed" data-close-modal="orderSuccessModalOverlay" id="orderSuccessModalCloseBtn">Great, Thanks!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdrawal Details Modal -->
+    <div class="modal-overlay" id="withdrawalDetailsModalOverlay">
+        <div class="modal-content-box">
+            <div class="modal-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Withdrawal Details</h2>
+                <button class="modal-close-btn" data-close-modal="withdrawalDetailsModalOverlay">&times;</button>
+            </div>
+            <form id="withdrawalDetailsForm" style="margin-top: 15px;">
+                <div class="form-group">
+                    <label for="withdrawalAmount">Amount (GHS) <span class="required-star">*</span></label>
+                    <input type="number" id="withdrawalAmountModal" placeholder="Enter amount" required min="5" step="0.01" readonly>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">Minimum withdrawal: GHS 5.00</p>
+                </div>
+                <div class="form-group">
+                    <label for="withdrawalMomoName">MoMo Account Name <span class="required-star">*</span></label>
+                    <input type="text" id="withdrawalMomoName" placeholder="Enter account name" required>
+                </div>
+                <div class="form-group">
+                    <label for="withdrawalPhone">Phone Number <span class="required-star">*</span></label>
+                    <input type="tel" id="withdrawalPhone" placeholder="0XXXXXXXXX" required maxlength="10" pattern="0[0-9]{9}">
+                </div>
+                <div class="form-group">
+                    <label for="withdrawalNetwork">Mobile Money Network <span class="required-star">*</span></label>
+                    <select id="withdrawalNetwork" class="form-select" required>
+                        <option value="">-- Select Network --</option>
+                        <option value="MTN">MTN Mobile Money</option>
+                        <option value="Vodafone">Vodafone Cash</option>
+                        <option value="AirtelTigo">AirtelTigo Money</option>
+                    </select>
+                </div>
+            </form>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" data-close-modal="withdrawalDetailsModalOverlay">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" form="withdrawalDetailsForm" class="btn-proceed" id="submitWithdrawalDetailsBtn">
+                    <i class="fas fa-paper-plane"></i> Submit Request
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="notificationCenterModalOverlay">
+        <div class="modal-content-box">
+            <div class="notification-center-header">
+                <h2>Notifications</h2>
+                <span class="notification-center-new-badge" id="notificationCenterNewCount">0 New</span>
+            </div>
+            <div class="notification-center-body" id="notificationCenterBody">
+                <p class="no-notifications-message">No new notifications.</p>
+            </div>
+            <div class="notification-center-footer">
+                <button class="btn-read-all" id="notificationCenterMarkAllReadBtn">Read all notifications</button>
+            </div>
+            <button class="modal-close-btn" data-close-modal="notificationCenterModalOverlay" style="position: absolute; top: 10px; right: 10px; font-size:22px;">&times;</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="howDataBundlesWorkModalOverlay">
+        <div class="modal-content-box">
+            <div class="modal-header">
+                <h2>How Data Bundle Orders Work</h2>
+                <button class="modal-close-btn" data-close-modal="howDataBundlesWorkModalOverlay">&times;</button>
+            </div>
+            <div style="margin-top: 10px;">
+                <p style="font-size:13px; color: var(--text-dark); margin-bottom:10px;">Follow these simple steps to purchase data bundles:</p>
+                <ol>
+                    <li>Select your desired Network (MTN, Telecel, AT) from the tabs on the dashboard.</li>
+                    <li>Enter the phone number that will receive the data bundle.</li>
+                    <li>Choose your preferred data package from the "Select Menu" dropdown. The price will be shown.</li>
+                    <li>Click the "Add to Cart" button.</li>
+                    <li>You can add multiple bundles for different numbers or networks to your cart.</li>
+                    <li>Click the floating cart icon ( <i class="fas fa-shopping-cart" style="color: var(--primary-green)"></i> ) at the bottom-right to view your cart.</li>
+                    <li>Review your items in the cart. If everything is correct, click "Process Orders".</li>
+                    <li>The total cost will be deducted from your gigsplan wallet balance.</li>
+                    <li>Your data bundles will be processed and sent to the respective numbers. You can check the status in the "History" page.</li>
+                </ol>
+                <p style="font-size:12px; color: var(--text-muted); margin-top:15px;">Ensure your wallet has sufficient balance before processing orders. You can top up your wallet using the "+" button on the dashboard or from the Wallet menu.</p>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button class="btn-proceed" data-close-modal="howDataBundlesWorkModalOverlay">Got it!</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- UPDATED: Confirm Purchase Modal (Added hidden inputs for JS data transfer) -->
+    <div class="modal-overlay" id="confirmPurchaseModalOverlay">
+        <div class="modal-content-box">
+            <div class="modal-header">
+                <h2>Confirm Data Bundle</h2>
+                <button class="modal-close-btn" data-close-modal="confirmPurchaseModalOverlay">&times;</button>
+            </div>
+            <div class="confirm-purchase-body">
+                <div class="user-balance-display">
+                    <i class="fas fa-wallet"></i>
+                    <span>Your Balance: <strong id="confirmPurchaseBalance">GHS 0.00</strong></span>
+                </div>
+                <div class="purchase-details">
+                    <p class="label">You are purchasing:</p>
+                    <h3 class="package-name" id="confirmPurchasePackageName">Loading...</h3>
+                    <h2 class="total-cost" id="confirmPurchaseTotalCost">Total: GHS 0.00</h2>
+                </div>
+
+                <!-- Balance Warning Message -->
+                <p id="confirmPurchaseBalanceWarning" style="display:none; color: var(--danger-color); font-size: 12px; text-align: center; margin-bottom: 15px; background-color: #ffebee; padding: 8px; border-radius: 6px;">
+                    Your wallet balance is too low for this purchase.
+                </p>
+
+                <div class="recipient-phone-group">
+                    <div class="form-group">
+                        <label for="confirmPurchaseRecipientNumber">Recipient Phone Number</label>
+                        <input type="tel" id="confirmPurchaseRecipientNumber" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                        <p>Please verify the number before proceeding.</p>
+                    </div>
+                </div>
+                
+                <!-- HIDDEN INPUTS TO PASS DATA TO SCRIPT -->
+                <input type="hidden" id="confirmSelectedNetwork">
+                <input type="hidden" id="confirmSelectedPackageId">
+                <input type="hidden" id="confirmSelectedPrice">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" data-close-modal="confirmPurchaseModalOverlay">Cancel</button>
+                <button type="button" class="btn btn-proceed" id="confirmPurchaseBuyNowBtn"><i class="fas fa-bolt"></i> Buy Now</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- NEW: Text Import Modal (Restyled) -->
+    <div class="modal-overlay" id="textImportModalOverlay">
+        <div class="modal-content-box">
+            <div class="modal-header">
+                <h2>Text Import</h2>
+                <button class="modal-close-btn" data-close-modal="textImportModalOverlay">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="textImportNetworkSelect">Network</label>
+                    <select id="textImportNetworkSelect">
+                        <option value="mtn">MTN</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="textImportDataOrders">Data Orders:</label>
+                    <textarea id="textImportDataOrders" placeholder="Paste your text here"></textarea>
+                    <p class="instructions">
+                        Format: <strong>`phone_number data_size`</strong> per line.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                 <button class="btn-cancel" data-close-modal="textImportModalOverlay">Cancel</button>
+                <button class="btn-proceed" id="submitTextOrdersBtn">Submit Orders</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Excel Import Modal -->
+    <div class="modal-overlay" id="excelImportModalOverlay">
+        <div class="modal-content-box">
+            <div class="modal-header">
+                <h2 id="excelImportModalTitle">MTN Orders Import</h2>
+                <button class="modal-close-btn" data-close-modal="excelImportModalOverlay">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h3>Upload file</h3>
+                    <p>only XLSX, XLS and CSV are Allowed.</p>
+                    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;">
+                    <button class="btn btn-primary" id="selectExcelFileBtn">Choose File</button>
+                    <span id="excelFileName">No file chosen</span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" data-close-modal="excelImportModalOverlay">Cancel</button>
+                <button class="btn-proceed" id="uploadExcelOrdersBtn">Upload Orders</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPDATED: Buy Data Modal (Added type="button" to prevent immediate submit) -->
+    <div class="modal-overlay" id="buyDataModalOverlay">
+        <div class="modal-content-box">
+            <div class="modal-header">
+                <h2>Buy Data Bundle</h2>
+                <button class="modal-close-btn" data-close-modal="buyDataModalOverlay">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="buyDataNetworkSelect">Select Network</label>
+                    <select id="buyDataNetworkSelect">
+                        <option value="">-- Select Network --</option>
+                        <option value="mtn">MTN</option>
+                        <option value="telecel">Telecel</option>
+                        <option value="at">AT (iShare)</option>
+                        <option value="afa_mins">AFA Mins</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="buyDataPackageSelect">Select Package</label>
+                    <select id="buyDataPackageSelect" disabled>
+                        <option value="">-- Select network first --</option>
+                    </select>
+                </div>
+                <div class="package-price-display" id="buyDataPriceDisplay" style="display: none;">
+                    <div class="label">Package Price</div>
+                    <div class="price" id="buyDataPriceValue">GHS 0.00</div>
+                </div>
+                <div class="form-group">
+                    <label for="buyDataPhoneNumber">Phone Number</label>
+                    <input type="tel" id="buyDataPhoneNumber" placeholder="e.g., 0241234567" pattern="^0\d{9}$" maxlength="10">
+                    <small style="font-size: 11px; color: var(--text-muted); margin-top: 5px; display: block;">Enter recipient's phone number</small>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" data-close-modal="buyDataModalOverlay">Cancel</button>
+                <button type="button" class="btn-proceed" id="buyDataSubmitBtn" disabled>Buy Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Community Popup Modal -->
+    <div class="community-popup-overlay" id="communityPopupOverlay">
+        <div class="community-popup-box">
+            <button class="community-popup-close" id="communityPopupClose">&times;</button>
+            <div class="community-popup-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3 class="community-popup-title">Join Our Community!</h3>
+            <p class="community-popup-message">Stay updated with exclusive offers, tips, and news. Connect with us on WhatsApp for instant support and updates.</p>
+            <div class="community-popup-actions">
+                <a href="https://wa.me/233552202292" target="_blank" class="btn-join-whatsapp" id="joinWhatsAppBtn">
+                    <i class="fab fa-whatsapp"></i> Join WhatsApp
+                </a>
+                <button class="btn-maybe-later" id="communityMaybeLaterBtn">Maybe Later</button>
+            </div>
+            <div class="community-popup-footer">
+                <label class="dont-show-again">
+                    <input type="checkbox" id="dontShowAgainCheckbox">
+                    <span>Don't show this again</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔐 2FA Phone Number Modal -->
+    <div class="modal-overlay" id="twoFAPhoneModalOverlay">
+        <div class="modal-content-box" style="max-width: 420px; text-align: center;">
+            <div class="modal-header">
+                <h2><i class="fas fa-mobile-alt"></i> Enable Two-Factor Authentication</h2>
+                <button class="modal-close-btn" data-close-modal="twoFAPhoneModalOverlay">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 25px;">
+                <p style="color: #7f8c8d; margin-bottom: 20px; font-size: 14px;">
+                    Enter your phone number to receive verification codes. Make sure you have access to this number.
+                </p>
+                <div class="form-group">
+                    <label for="twoFAPhoneInput" style="text-align: left; display: block; margin-bottom: 8px; font-weight: 500;">Phone Number</label>
+                    <input type="tel" id="twoFAPhoneInput" placeholder="233241234567 or 0241234567" style="text-align: center; font-size: 16px;">
+                    <small style="display: block; margin-top: 8px; color: #95a5a6; font-size: 12px;">
+                        Ghana number (233XXXXXXXXX or 0XXXXXXXXX)
+                    </small>
+                </div>
+                <div class="modal-actions" style="margin-top: 25px; gap: 10px;">
+                    <button class="btn-cancel" data-close-modal="twoFAPhoneModalOverlay">Cancel</button>
+                    <button class="btn-proceed" id="sendTwoFACodeBtn">
+                        <i class="fas fa-paper-plane"></i> Send Code
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔐 2FA Verification Code Modal -->
+    <div class="modal-overlay" id="twoFAVerifyModalOverlay">
+        <div class="modal-content-box" style="max-width: 420px; text-align: center;">
+            <div class="modal-header">
+                <h2><i class="fas fa-shield-alt"></i> Verify Code</h2>
+                <button class="modal-close-btn" data-close-modal="twoFAVerifyModalOverlay">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 25px;">
+                <p style="color: #7f8c8d; margin-bottom: 20px; font-size: 14px;">
+                    We've sent a 6-digit code to <strong id="twoFAVerifyPhoneDisplay"></strong>
+                </p>
+                <div class="form-group">
+                    <label for="twoFAVerifyCodeInput" style="text-align: left; display: block; margin-bottom: 8px; font-weight: 500;">Verification Code</label>
+                    <input type="text" id="twoFAVerifyCodeInput" placeholder="000000" maxlength="6" pattern="[0-9]{6}" style="text-align: center; font-size: 24px; letter-spacing: 10px; font-weight: 600;" autocomplete="off">
+                    <small style="display: block; margin-top: 8px; color: #95a5a6; font-size: 12px;">
+                        Code expires in 5 minutes
+                    </small>
+                </div>
+                <div class="modal-actions" style="margin-top: 25px; gap: 10px;">
+                    <button class="btn-cancel" data-close-modal="twoFAVerifyModalOverlay">Cancel</button>
+                    <button class="btn-proceed" id="verifyTwoFACodeBtn">
+                        <i class="fas fa-check"></i> Verify & Enable
+                    </button>
+                </div>
+                <button id="resendTwoFACodeBtn" style="margin-top: 15px; background: none; border: none; color: #046D8B; text-decoration: underline; cursor: pointer; font-size: 13px;">
+                    Didn't receive code? Resend
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Golden Ticket / Become Agent Modal (Compact) -->
+    <div class="modal-overlay" id="goldenTicketModalOverlay">
+        <div class="modal-content-box" style="max-width: 340px; padding: 10px;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%); color: white; padding: 12px 14px; border-radius: 8px 8px 0 0; display:flex; align-items:center; justify-content:space-between;">
+                <h2 style="color: white; font-size: 16px; margin: 0; display:flex; align-items:center; gap:8px;"><i class="fas fa-star"></i> Become an Agent</h2>
+                <button class="modal-close-btn" data-close-modal="goldenTicketModalOverlay" style="color: white; background:transparent; border:none; font-size:18px;">&times;</button>
+            </div>
+            <div class="golden-ticket-info" style="padding: 12px;">
+                <div class="benefit-card" style="background:#f7fafc; padding: 8px; border-radius: 6px; margin-bottom:10px;">
+                    <h4 style="color: #1f2937; margin: 0 0 6px 0; font-size: 13px;"><i class="fas fa-gift"></i> Benefits</h4>
+                    <ul style="color: #374151; margin: 0; padding-left: 18px; font-size: 12px;">
+                        <li style="margin-bottom:4px;"><i class="fas fa-check-circle" style="color:#10b981; margin-right:6px;"></i> Discounted prices</li>
+                        <li style="margin-bottom:4px;"><i class="fas fa-check-circle" style="color:#10b981; margin-right:6px;"></i> Higher profits</li>
+                        <li><i class="fas fa-check-circle" style="color:#10b981; margin-right:6px;"></i> Priority support</li>
+                    </ul>
+                </div>
+
+                <div class="price-display" style="text-align: center; padding: 8px; background: transparent; border-radius: 6px; margin-bottom: 8px;">
+                    <p style="margin: 0; color: #6b7280; font-size: 12px;">One-time Fee</p>
+                    <div style="margin:6px 0; font-weight:700; color:#111827; font-size:20px;">GH₵ <span id="goldenTicketPriceDisplay">40.00</span></div>
+                    <p style="margin: 0; color: #9ca3af; font-size: 11px;"><i class="fas fa-lock"></i> Non-refundable</p>
+                </div>
+
+                <div class="balance-check" style="padding: 8px; background: #f1f5f9; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid #60a5fa;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:#374151; font-size:12px;"><i class="fas fa-wallet"></i> Balance</span>
+                        <span style="font-weight:600; color:#111827; font-size:13px;">GH₵ <span id="goldenTicketModalBalance">0.00</span></span>
+                    </div>
+                    <div id="goldenTicketBalanceWarning" style="display:none; margin-top:6px; padding:6px; background:#fee2e2; border-radius:6px; color:#7f1d1d; font-size:12px;">
+                        <i class="fas fa-exclamation-triangle"></i> Insufficient balance
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="goldenTicketAgreeCheckbox" style="width:14px; height:14px;">
+                    <label for="goldenTicketAgreeCheckbox" style="font-size:12px; color:#4b5563; margin:0;">I agree — non-refundable</label>
+                </div>
+            </div>
+            <div class="modal-actions" style="padding: 10px 12px; display:flex; gap:8px; justify-content:flex-end;">
+                <button type="button" class="btn-cancel" data-close-modal="goldenTicketModalOverlay" style="font-size:13px; padding:7px 12px;">Cancel</button>
+                <button type="button" class="btn-proceed" id="goldenTicketPurchaseBtn" disabled style="font-size:13px; padding:7px 12px;">
+                    <i class="fas fa-check-circle"></i> Activate
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

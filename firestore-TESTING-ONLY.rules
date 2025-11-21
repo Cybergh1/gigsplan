@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ⚠️ TEMPORARY TESTING RULES - VERY PERMISSIVE ⚠️
+    // Use these rules temporarily to test if permissions are the issue
+    // Then switch back to the secure firestore.rules file
+
+    // Allow all authenticated users to read everything
+    match /{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}

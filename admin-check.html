@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Role Checker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .loading { background: #e3f2fd; color: #1976d2; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+        .warning { background: #fff3e0; color: #ef6c00; }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .fix-button {
+            background: #4caf50;
+        }
+        .fix-button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Admin Role Checker</h1>
+        <p>This tool checks if your current user has admin access and helps fix any issues.</p>
+
+        <div id="status" class="status loading">
+            <strong>⏳ Checking authentication...</strong>
+        </div>
+
+        <div id="userInfo" style="display: none;">
+            <h3>User Information:</h3>
+            <div class="info" id="userData"></div>
+        </div>
+
+        <div id="actions" style="display: none;">
+            <button class="fix-button" onclick="setAdminRole()">✅ Set My Role to Admin</button>
+            <button onclick="testFirestoreAccess()">🔍 Test Firestore Access</button>
+            <button onclick="location.reload()">🔄 Refresh Check</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getFirestore, doc, getDoc, setDoc, collection, query, limit, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+        // Your web app's Firebase configuration (copy from your main app)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.auth = auth;
+
+        const statusDiv = document.getElementById('status');
+        const userInfoDiv = document.getElementById('userInfo');
+        const userDataDiv = document.getElementById('userData');
+        const actionsDiv = document.getElementById('actions');
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try {
+                    statusDiv.className = 'status loading';
+                    statusDiv.innerHTML = '<strong>⏳ Loading user data from Firestore...</strong>';
+
+                    const userDocRef = doc(db, 'users', user.uid);
+                    const userDoc = await getDoc(userDocRef);
+
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        const role = userData.role || 'user';
+                        const isAdmin = role === 'admin' || role === 'Admin';
+
+                        userDataDiv.innerHTML = `
+                            <strong>UID:</strong> ${user.uid}<br>
+                            <strong>Email:</strong> ${user.email}<br>
+                            <strong>Role:</strong> ${role}<br>
+                            <strong>Balance:</strong> GHS ${userData.balance || 0}<br>
+                            <strong>Is Admin:</strong> ${isAdmin ? '✅ YES' : '❌ NO'}
+                        `;
+                        userInfoDiv.style.display = 'block';
+                        actionsDiv.style.display = 'block';
+
+                        if (isAdmin) {
+                            statusDiv.className = 'status success';
+                            statusDiv.innerHTML = `
+                                <strong>✅ SUCCESS!</strong><br>
+                                Your account HAS admin access. Role is set to: <strong>${role}</strong><br>
+                                <small>If you're still seeing permission errors, the Firestore rules may not be deployed yet.</small>
+                            `;
+                        } else {
+                            statusDiv.className = 'status warning';
+                            statusDiv.innerHTML = `
+                                <strong>⚠️ PROBLEM FOUND!</strong><br>
+                                Your role is: <strong>${role}</strong> (should be "admin")<br>
+                                Click the "Set My Role to Admin" button below to fix this.
+                            `;
+                        }
+                    } else {
+                        statusDiv.className = 'status error';
+                        statusDiv.innerHTML = '<strong>❌ Error:</strong> User document not found in Firestore!';
+                        actionsDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = `<strong>❌ Error:</strong> ${error.message}<br><small>${error.code}</small>`;
+                    console.error('Error:', error);
+                    actionsDiv.style.display = 'block';
+                }
+            } else {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '<strong>❌ Not logged in!</strong><br>Please log in to your app first, then come back here.';
+            }
+        });
+
+        window.setAdminRole = async function() {
+            const user = auth.currentUser;
+            if (!user) {
+                alert('Not logged in!');
+                return;
+            }
+
+            try {
+                statusDiv.className = 'status loading';
+                statusDiv.innerHTML = '<strong>⏳ Setting admin role...</strong>';
+
+                const userDocRef = doc(db, 'users', user.uid);
+                await setDoc(userDocRef, { role: 'admin' }, { merge: true });
+
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = '<strong>✅ Admin role set successfully!</strong><br>Refreshing in 2 seconds...';
+
+                setTimeout(() => location.reload(), 2000);
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `<strong>❌ Error setting admin role:</strong> ${error.message}<br><small>${error.code}</small><br><br><strong>MANUAL FIX:</strong> Go to Firebase Console → Firestore Database → users collection → find your user document → edit the "role" field to "admin"`;
+                console.error('Error:', error);
+            }
+        };
+
+        window.testFirestoreAccess = async function() {
+            const user = auth.currentUser;
+            if (!user) {
+                alert('Not logged in!');
+                return;
+            }
+
+            try {
+                statusDiv.className = 'status loading';
+                statusDiv.innerHTML = '<strong>⏳ Testing Firestore access...</strong>';
+
+                const tests = [];
+
+                // Test 1: Read own user document
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    tests.push(`✅ Read own user: SUCCESS`);
+                } catch (e) {
+                    tests.push(`❌ Read own user: FAILED (${e.code})`);
+                }
+
+                // Test 2: Read all users (admin only)
+                try {
+                    const usersQuery = query(collection(db, 'users'), limit(5));
+                    const usersSnapshot = await getDocs(usersQuery);
+                    tests.push(`✅ Read all users: SUCCESS (found ${usersSnapshot.size} users)`);
+                } catch (e) {
+                    tests.push(`❌ Read all users: FAILED (${e.code})`);
+                }
+
+                // Test 3: Read orders (admin should see all)
+                try {
+                    const ordersQuery = query(collection(db, 'orders'), limit(5));
+                    const ordersSnapshot = await getDocs(ordersQuery);
+                    tests.push(`✅ Read orders: SUCCESS (found ${ordersSnapshot.size} orders)`);
+                } catch (e) {
+                    tests.push(`❌ Read orders: FAILED (${e.code})`);
+                }
+
+                // Test 4: Read data packages
+                try {
+                    const packagesQuery = query(collection(db, 'dataPackages/mtn/packages'), limit(1));
+                    const packagesSnapshot = await getDocs(packagesQuery);
+                    tests.push(`✅ Read data packages: SUCCESS`);
+                } catch (e) {
+                    tests.push(`❌ Read data packages: FAILED (${e.code})`);
+                }
+
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `<strong>🔍 Firestore Access Test Results:</strong><br><br>${tests.join('<br>')}`;
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `<strong>❌ Test failed:</strong> ${error.message}`;
+                console.error('Error:', error);
+            }
+        };
+    </script>
+</body>
+</html>

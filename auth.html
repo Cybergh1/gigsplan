@@ -1,0 +1,1337 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>gigsplan - Login/Register</title>
+
+    <link rel="icon" href="https://dev-dataverse-global.pantheonsite.io/wp-content/uploads/2025/08/IMG-20250807-WA0024-2.jpg" type="image/png">
+    <link rel="apple-touch-icon" href="https://dev-dataverse-global.pantheonsite.io/wp-content/uploads/2025/08/IMG-20250807-WA0024-2.jpg">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- OneSignal SDK -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        try {
+          await OneSignal.init({
+            appId: "ab6af61a-ebf8-49a1-b8b9-106ee85b5754", // Your OneSignal App ID
+            allowLocalhostAsSecureOrigin: true,
+            autoResubscribe: true,
+          });
+          console.log("OneSignal SDK Initialized successfully on auth page.");
+        } catch (error) {
+          console.error("Error initializing OneSignal SDK on auth page:", error);
+        }
+      });
+    </script>
+
+    <style>
+        :root {
+            --primary-green: #27ae60;
+            --primary-green-light: #2ecc71;
+            --text-light: #ffffff;
+            --text-dark: #34495e;
+            --text-muted: #7f8c8d;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --body-bg: #f4f6f8;
+            --auth-bg-color: #e8eef3;
+            --toast-success-bg: #4CAF50;
+            --toast-error-bg: #f44336;
+            --toast-warning-bg: #ff9800;
+            --modal-overlay-bg: rgba(0, 0, 0, 0.6);
+            --spinner-color: var(--primary-green);
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --profile-role-bg: #ede7f6; /* For role display in deactivated modal */
+            --profile-role-text: #5e35b1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--auth-bg-color);
+            color: var(--text-dark);
+            line-height: 1.5;
+            overflow-x: hidden;
+            position: relative;
+            font-size: 13px;
+            touch-action: manipulation;
+        }
+        body.modal-open {
+            overflow-y: hidden;
+        }
+
+        a { text-decoration: none; color: var(--primary-green); }
+
+        /* Loader */
+        .page-loader-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background-color: var(--primary-green);
+            z-index: 99999;
+            transition: width 0.25s ease-out, opacity 0.4s ease-out;
+            opacity: 1;
+        }
+        .page-loader-progress.done {
+            opacity: 0;
+            transition: width 0.25s ease-out, opacity 0.5s ease-out 0.3s;
+        }
+        .loading-spinner-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; z-index: 2500; opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0s 0.2s ease; }
+        .loading-spinner-overlay.show { opacity: 1; visibility: visible; transition-delay: 0s; }
+        .loader-container { display: flex; justify-content: center; align-items: center; }
+        .spinner-original { width: 36px; height: 36px; border: 3px solid rgba(0,0,0,0.1); border-left-color: var(--spinner-color); border-radius: 50%; animation: spin 0.8s linear infinite; display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-l16 { width: 60px; height: 16px; display: none; grid-template-columns: 1fr; grid-template-rows: 1fr; }
+        .loader-l16:before, .loader-l16:after { content: ""; grid-area: 1/1; --c:no-repeat linear-gradient(#046D8B 0 0); background: var(--c), var(--c), var(--c); animation: l16-1 1.5s infinite linear, l16-2 1.5s infinite linear; transform: scale(var(--s,1)) translate(3px,-3px); }
+        .loader-l16:after { --s:-1; }
+        @keyframes l16-1 { 0%,3% {background-size:0 4px,4px 0,0 4px} 16.67%{background-size:100% 4px,4px 0,0 4px} 33.33%{background-size:100% 4px,4px 100%,0 4px} 46%,54% {background-size:100% 4px,4px 100%,100% 4px} 66.67%{background-size:0 4px,4px 100%,100% 4px} 83.33%{background-size:0 4px,4px 0,100% 4px} 96%,100% {background-size:0 4px,4px 0,0 4px} }
+        @keyframes l16-2 { 0%,49.9%{background-position:0 0,100% 0,100% 100%} 50%,100%{background-position:100% 0,100% 100%,0 100%} }
+        .loader-l4 { height: 60px; aspect-ratio: 2; position: relative; display: none; }
+        .loader-l4:before { content:""; position: absolute; inset: 100% 75% -3px 0; background: #524656; animation: l4-0 1s linear infinite alternate; }
+        .loader-l4:after { content: ""; position: absolute; inset: auto 42.5% 0; aspect-ratio: 1; border-radius: 50%; background: #CF4647; animation: l4-1 1s cubic-bezier(0,700,1,700) infinite alternate, l4-2 1s linear infinite alternate; }
+        @keyframes l4-0 { 0%,30% {translate:0% -2px;rotate:20deg} 70%,to {translate:300% -2px;rotate:-20deg} }
+        @keyframes l4-1 { 0%,2% {bottom:0%} 98%,to {bottom:.1%} }
+        @keyframes l4-2 { 0% {translate:-220%} to {translate:220%} }
+        .loading-spinner-overlay.show + .modal-overlay .btn-proceed, .loading-spinner-overlay.show ~ .auth-wrapper .auth-btn { pointer-events: none; opacity: 0.7; }
+        
+        /* Auth Wrapper */
+        .auth-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 15px; background-color: var(--auth-bg-color); background-image: radial-gradient(circle, rgba(0,0,0,0.03) 0.8px, transparent 0.8px); background-size: 12px 12px; }
+        .auth-page { background-color: var(--card-bg); padding: 25px 30px; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: left; }
+        .auth-page.register-page h1,
+        .auth-page.register-page .sub-heading,
+        .auth-page.console-page h1,
+        .auth-page.console-page .sub-heading { text-align: center; }
+        .auth-page h1 { font-size: 20px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
+        .auth-page .sub-heading { font-size: 12.5px; color: var(--text-muted); margin-bottom: 25px; }
+        .auth-page .sub-heading a { font-weight: 500; }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; color: var(--text-dark); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary-green); box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.2); }
+        .form-group input::placeholder { color: #bbb; font-size: 12px; }
+        .password-wrapper { position: relative; }
+        .password-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); cursor: pointer; font-size: 14px; }
+        .auth-btn { width: 100%; padding: 12px; background-color: var(--primary-green-light); color: var(--text-light); border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
+        .auth-btn:hover { background-color: var(--primary-green); }
+        .auth-links { text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-muted); }
+        .auth-links a { font-weight: 500; }
+        .terms-text { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 12px; line-height: 1.4; }
+        .forgot-password { display: block; text-align: right; font-size: 12px; margin-top: -12px; margin-bottom: 18px; }
+
+        .console-auth-options { text-align: center; margin-top: 15px; }
+        .console-auth-options button {
+            background: none; border: none; color: var(--primary-green);
+            font-size: 12px; font-weight: 500; cursor: pointer; padding: 5px;
+        }
+         .console-auth-options button:hover { text-decoration: underline; }
+
+        /* Toast */
+        .toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background-color: var(--toast-success-bg); color: var(--text-light); padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 2000; display: flex; align-items: center; transition: top 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.3s ease; opacity: 0; max-width: 350px; }
+        .toast.show { top: 15px; opacity: 1; }
+        .toast.error { background-color: var(--toast-error-bg); }
+        .toast.warning { background-color: var(--toast-warning-bg); }
+        .toast.info { background-color: #2196F3; }
+        .toast i { font-size: 20px; margin-right: 10px; }
+        .toast-content h4 { margin: 0 0 3px 0; font-size: 15px; font-weight: 600; }
+        .toast-content p { margin: 0; font-size: 13px; line-height: 1.4; }
+        .toast-progress { position: absolute; bottom: 0; left: 0; height: 4px; width: 100%; background-color: rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; }
+        .toast-progress-bar { height: 100%; background-color: var(--text-light); width: 100%; border-radius: 0 0 0 8px; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-overlay-bg); display: flex; align-items: center; justify-content: center; z-index: 1500; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s 0.3s ease; padding: 15px; }
+        .modal-overlay.show { opacity: 1; visibility: visible; transition-delay: 0s; }
+        .modal-content-box { background-color: var(--card-bg); padding: 20px 25px; border-radius: 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); width: 100%; max-width: 380px; text-align: left; transform: scale(0.95) translateY(10px); opacity: 0; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease; }
+        .modal-overlay.show .modal-content-box { transform: scale(1) translateY(0); opacity: 1; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 18px; }
+        .modal-header h2 { font-size: 17px; font-weight: 600; color: var(--text-dark); margin: 0; }
+        .modal-close-btn { font-size: 18px; color: var(--text-muted); background: none; border: none; cursor: pointer; }
+        .modal-actions { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 25px; }
+        .modal-actions .btn-cancel { background-color: transparent; color: var(--text-muted); padding: 8px 18px; font-weight: 500; border: none; cursor: pointer; font-size: 13px; }
+        .modal-actions .btn-cancel:hover { color: var(--text-dark); }
+        .modal-actions .btn-proceed { background-color: var(--primary-green-light); color: var(--text-light); padding: 8px 22px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; font-size: 13px; }
+        .modal-actions .btn-proceed:hover { background-color: var(--primary-green); }
+
+        /* Console Approval Modal */
+        #consoleApprovalModalOverlay .modal-content-box { max-width: 340px; text-align: center; }
+        .console-approval-icon { font-size: 48px; color: var(--primary-green); margin-bottom: 15px; }
+        #consoleApprovalModalOverlay h2 { font-size: 18px; margin-bottom: 10px; padding-bottom: 0; border-bottom: none; }
+        #consoleApprovalMessage { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+        #consoleApprovalModalOverlay .modal-actions { justify-content: center; }
+
+        /* Account Deactivated Modal */
+        #accountDeactivatedModalOverlay .modal-content-box { max-width: 380px; text-align: center; }
+
+        /* WhatsApp Required Modal */
+        #whatsappRequiredModalOverlay .modal-content-box {
+            max-width: 380px;
+            text-align: center;
+            padding: 25px;
+        }
+        #whatsappRequiredModalOverlay .form-group input {
+            text-align: center;
+        }
+
+
+        /* Maintenance Mode Overlay */
+        .maintenance-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #121212; display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; font-family: 'Poppins', sans-serif; color: #ffffff; }
+        .maintenance-card { background-color: #1e1e1e; border-radius: 12px; padding: 30px 25px; text-align: center; max-width: 360px; width: 100%; box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .maintenance-icon { margin-bottom: 20px; }
+        .maintenance-icon i.fa-cog { font-size: 48px; color: #ffffff; }
+        .maintenance-card h1 { font-size: 24px; font-weight: 600; color: #ffffff; margin-bottom: 10px; }
+        .maintenance-card .maintenance-subtitle { font-size: 14px; color: #a0a0a0; line-height: 1.5; margin-bottom: 25px; max-width: 300px; margin-left: auto; margin-right: auto; }
+        .maintenance-divider { border: none; height: 1px; background-color: #333333; margin: 25px 0; }
+        .maintenance-info-box { background-color: #2a2a2a; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; align-items: center; text-align: left; }
+        .maintenance-info-box:last-child { margin-bottom: 0; }
+        .maintenance-info-box i { font-size: 18px; color: #ffffff; margin-right: 12px; width: 20px; text-align: center; }
+        .maintenance-info-box span { font-size: 14px; color: #d0d0d0; line-height: 1.4; }
+
+    </style>
+</head>
+<body>
+<div id="page-loader-progress" class="page-loader-progress"></div>
+
+<!-- Maintenance Mode Overlay -->
+<div class="maintenance-overlay" id="maintenanceOverlay" style="display: none;">
+    <div class="maintenance-card">
+        <div class="maintenance-icon">
+            <i class="fas fa-cog fa-spin"></i>
+        </div>
+        <h1>System Maintenance</h1>
+        <p class="maintenance-subtitle">We're currently performing scheduled maintenance to improve our services.</p>
+        <hr class="maintenance-divider">
+        <div class="maintenance-info-box">
+            <i class="fas fa-bolt"></i>
+            <span>System upgrades in progress</span>
+        </div>
+        <div class="maintenance-info-box">
+            <i class="fas fa-clock"></i>
+            <span>Page will refresh automatically when complete</span>
+        </div>
+    </div>
+</div>
+
+<div class="loading-spinner-overlay" id="loadingSpinnerOverlay">
+    <div class="loader-container">
+        <div class="spinner-original"></div>
+        <div class="loader-l16"></div>
+        <div class="loader-l4"></div>
+    </div>
+</div>
+
+<div class="auth-wrapper" id="authWrapper">
+    <div class="auth-page login-page" id="loginPage">
+        <h1>Log In</h1>
+        <p class="sub-heading">Welcome back! Please enter your details.</p>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginEmail">Email Address</label>
+                <input type="email" id="loginEmail" placeholder="name@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                    <span class="password-toggle"><i class="fas fa-eye"></i></span>
+                </div>
+            </div>
+            <a href="#" class="forgot-password" id="forgotPasswordLink">Forgot Password?</a>
+            <button type="submit" class="auth-btn">Log In</button>
+        </form>
+        <p class="auth-links">No account yet? <a href="#" id="showRegister">Register</a></p>
+    </div>
+    <div class="auth-page register-page" id="registerPage" style="display: none;">
+         <h1>Register</h1>
+         <p class="sub-heading">Already have an account? <a href="#" id="showLoginFromRegister">Login</a></p>
+         <form id="registerForm">
+             <div class="form-group">
+                <label for="registerFullName">Full Name</label>
+                <input type="text" id="registerFullName" placeholder="Enter Full Name (First Name First)" required>
+             </div>
+             <div class="form-group">
+                 <label for="registerEmail">Email Address</label>
+                 <input type="email" id="registerEmail" placeholder="hca.edu.gh@gmail.com" required>
+             </div>
+             <div class="form-group">
+                 <label for="registerMobile">Mobile Number</label>
+                 <input type="tel" id="registerMobile" placeholder="eg. 23324********" required pattern="^233\d{9}$" title="Ghana number format: 233 followed by 9 digits (e.g., 233241234567)">
+             </div>
+             <div class="form-group">
+                 <label for="registerPassword">Password</label>
+                 <div class="password-wrapper">
+                     <input type="password" id="registerPassword" placeholder="•••••••• (min. 6 characters)" required minlength="6">
+                     <span class="password-toggle"><i class="fas fa-eye"></i></span>
+                 </div>
+             </div>
+             <button type="submit" class="auth-btn" id="registerSubmitBtn">Sign Up</button>
+         </form>
+         <p class="terms-text">By signing up, you agree to accept our <br><a href="#">Terms & Conditions</a></p>
+    </div>
+
+    <div class="auth-page console-page" id="consoleAuthPage" style="display: none;">
+        <div id="consoleLoginPageContent">
+            <h1>Super Agent Login</h1>
+            <p class="sub-heading">Enter your Super Agent credentials.</p>
+            <form id="consoleLoginForm">
+                <div class="form-group">
+                    <label for="consoleEmail">Email Address</label>
+                    <input type="email" id="consoleEmail" placeholder="hca.edu.gh@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="consolePassword">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="consolePassword" placeholder="••••••••" required>
+                        <span class="password-toggle"><i class="fas fa-eye"></i></span>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn">Login to Super Agent Console</button>
+            </form>
+            <div class="console-auth-options">
+                <button type="button" id="showConsoleRegister">Request Super Agent Access</button> |
+                <button type="button" id="backToAppLoginFromConsole">Back to App Login</button>
+            </div>
+        </div>
+
+        <div id="consoleRegisterPageContent" style="display: none;">
+            <h1>Request Super Agent Access</h1>
+            <p class="sub-heading">Submit your details to request Super Agent access.</p>
+            <form id="consoleRegisterForm">
+                <div class="form-group">
+                    <label for="consoleRegisterFullName">Full Name</label>
+                    <input type="text" id="consoleRegisterFullName" placeholder="Your Full Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="consoleRegisterEmail">Email Address</label>
+                    <input type="email" id="consoleRegisterEmail" placeholder="hca.edu.gh@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="consoleRegisterPassword">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="consoleRegisterPassword" placeholder="Create a strong password" required minlength="6">
+                        <span class="password-toggle"><i class="fas fa-eye"></i></span>
+                    </div>
+                </div>
+                <button type="submit" class="auth-btn">Submit Super Agent Request</button>
+            </form>
+             <div class="console-auth-options">
+                <button type="button" id="showConsoleLoginFromRegister">Already have credentials?</button> |
+                <button type="button" id="backToAppLoginFromConsoleRegister">Back to App Login</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="toast" id="toastNotification"> <i class="fas fa-check-circle"></i> <div class="toast-content"> <h4 id="toastTitle">Success</h4> <p id="toastMessage">Operation successful!</p> </div> <div class="toast-progress"> <div class="toast-progress-bar" id="toastProgressBar"></div> </div> </div>
+
+<div class="modal-overlay" id="forgotPasswordModalOverlay"> <div class="modal-content-box"> <div class="modal-header"> <h2>Forgot Password</h2> <button class="modal-close-btn" data-close-modal="forgotPasswordModalOverlay">&times;</button> </div> <form id="forgotPasswordForm" style="margin-top: 10px;"> <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Enter your email address. If it matches an account, we'll send reset instructions.</p> <div class="form-group"> <label for="forgotEmail">Email Address</label> <input type="email" id="forgotEmail" placeholder="Enter your registered email" required> </div> </form> <div class="modal-actions"> <button type="button" class="btn-cancel" data-close-modal="forgotPasswordModalOverlay">Cancel</button> <button type="button" class="btn-proceed" id="sendResetLinkBtn">Send Reset Link</button> </div> </div> </div>
+
+<div class="modal-overlay" id="consoleApprovalModalOverlay"> <div class="modal-content-box"> <div class="modal-header" style="border-bottom: none; margin-bottom: 0;"> <h2 id="consoleApprovalTitle">Request Submitted</h2> <button class="modal-close-btn" data-close-modal="consoleApprovalModalOverlay">&times;</button> </div> <div class="console-approval-icon" id="consoleApprovalIconContainer"> <i class="fas fa-user-clock"></i> </div> <p id="consoleApprovalMessage">Your request for Super Agent access has been submitted. You will be notified once it's approved by an administrator.</p> <div class="modal-actions" style="justify-content: center;"> <button class="btn-proceed" data-close-modal="consoleApprovalModalOverlay">OK</button> </div> </div> </div>
+
+<div class="modal-overlay" id="accountDeactivatedModalOverlay">
+    <div class="modal-content-box" style="max-width: 380px; text-align: center;">
+        <div style="font-size: 48px; color: var(--warning-color); margin-bottom: 15px;">
+            <i class="fas fa-user-lock"></i>
+        </div>
+        <h2 style="font-size: 20px; margin-bottom: 10px;">Account Deactivated</h2>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;" id="accountDeactivatedMessage">
+            Your account has been deactivated. Please contact support for assistance.
+        </p>
+        <div class="modal-actions" style="justify-content: center;">
+            <button class="btn-proceed" id="deactivatedAccountOkBtn" data-close-modal="accountDeactivatedModalOverlay" style="background-color: var(--primary-green);">OK</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="whatsappRequiredModalOverlay" style="display:none;">
+    <div class="modal-content-box" style="max-width: 380px; text-align: center; padding: 25px;">
+        <div style="font-size: 48px; color: #3498db; margin-bottom: 20px;">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <img src="https://dev-dataverse-global.pantheonsite.io/wp-content/uploads/2025/06/Screenshot_20250608-104108.png" alt="gigsplan Logo" style="height: 40px; margin-bottom: 15px;">
+        <h3 style="font-size: 16px; font-weight: 600; color: #27ae60; margin-bottom: 15px;">
+            <i class="fab fa-whatsapp"></i> WhatsApp Number Required
+        </h3>
+        <p style="font-size: 13px; color: var(--text-dark); line-height: 1.5; margin-bottom: 25px;">
+            To continue using gigsplan, please provide your Active WhatsApp number with country code. Providing fake whatsapp number can result in account permanently suspended
+        </p>
+        <div class="form-group" style="margin-bottom: 25px;">
+            <input type="tel" id="whatsappNumberInput" placeholder="+CountryCode Number" value="" style="text-align: center;">
+             <small style="font-size:11px; color: var(--text-muted); margin-top:5px; display:block;">Example: +233551234567</small>
+        </div>
+        <button class="btn btn-primary" id="saveWhatsappNumberBtn" style="width: 100%; padding: 12px; font-size: 14px;">Save WhatsApp Number</button>
+    </div>
+</div>
+
+<!-- 🔐 2FA Verification Modal -->
+<div class="modal-overlay" id="twoFAVerificationModalOverlay" style="display:none;">
+    <div class="modal-content-box" style="max-width: 400px; text-align: center; padding: 30px;">
+        <div style="font-size: 50px; color: #046D8B; margin-bottom: 20px;">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 600; color: var(--text-dark); margin-bottom: 10px;">
+            Two-Factor Authentication
+        </h3>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 25px;">
+            A verification code has been sent to <strong id="twoFAPhoneDisplay"></strong>
+        </p>
+        <div class="form-group" style="margin-bottom: 20px;">
+            <input type="text" id="twoFACodeInput" placeholder="Enter 6-digit code" maxlength="6" pattern="[0-9]{6}" style="text-align: center; font-size: 20px; letter-spacing: 8px; font-weight: 600;" autocomplete="off">
+            <small style="font-size: 11px; color: var(--text-muted); margin-top: 8px; display: block;">Code expires in 5 minutes</small>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <button class="btn" id="twoFACancelBtn" style="flex: 1; background-color: #95a5a6; color: white; padding: 12px;">Cancel</button>
+            <button class="btn btn-primary" id="twoFAVerifyBtn" style="flex: 1; padding: 12px; background-color: #046D8B;">Verify</button>
+        </div>
+        <button id="resendTwoFALoginCodeBtn" style="margin-top: 15px; background: none; border: none; color: #046D8B; text-decoration: underline; cursor: pointer; font-size: 13px;">
+            Didn't receive code? Resend
+        </button>
+    </div>
+</div>
+
+
+<script type="module">
+    // --- Firebase SDK Imports ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+        getAuth,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        signOut as firebaseSignOut,
+        onAuthStateChanged,
+        sendPasswordResetEmail,
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import {
+        getFirestore, doc, setDoc, getDoc, updateDoc,
+        serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // --- Firebase Configuration ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyD_YTYess5I3Uuf7X9g-3qlfVHR4FY1NSQ",
+        authDomain: "quickxpress-55347.firebaseapp.com",
+        projectId: "quickxpress-55347",
+        storageBucket: "quickxpress-55347.firebasestorage.app",
+        messagingSenderId: "645813936880",
+        appId: "1:645813936880:web:43ee96c1fa548631751835"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let siteSettings = {
+        maintenanceModeEnabled: false,
+        registrationDisabled: false,
+    };
+    let currentUser = null;
+    let currentUserData = null; // Only fetched to check role/status
+    let toastTimeout;
+    let pageLoadTimeout;
+
+    // --- DOMElements for AUTH.HTML ONLY ---
+    const DOMElements = {
+        pageLoaderProgress: document.getElementById('page-loader-progress'),
+        loadingSpinnerOverlay: document.getElementById('loadingSpinnerOverlay'),
+        spinnerOriginal: document.querySelector('.spinner-original'),
+        loaderL16: document.querySelector('.loader-l16'),
+        loaderL4: document.querySelector('.loader-l4'),
+
+        authWrapper: document.getElementById('authWrapper'),
+        loginPage: document.getElementById('loginPage'),
+        registerPage: document.getElementById('registerPage'),
+        consoleAuthPage: document.getElementById('consoleAuthPage'),
+
+        consoleLoginPageContent: document.getElementById('consoleLoginPageContent'),
+        consoleRegisterPageContent: document.getElementById('consoleRegisterPageContent'),
+
+        loginForm: document.getElementById('loginForm'),
+        loginEmail: document.getElementById('loginEmail'),
+        loginPassword: document.getElementById('loginPassword'),
+        
+        registerForm: document.getElementById('registerForm'),
+        registerFullName: document.getElementById('registerFullName'), // Corrected to use ID
+        registerEmail: document.getElementById('registerEmail'), // Corrected to use ID
+        registerMobile: document.getElementById('registerMobile'), // Corrected to use ID
+        registerPassword: document.getElementById('registerPassword'), // Corrected to use ID
+        registerSubmitBtn: document.getElementById('registerSubmitBtn'),
+
+        showRegisterLink: document.getElementById('showRegister'),
+        showLoginFromRegisterLink: document.getElementById('showLoginFromRegister'),
+        forgotPasswordLink: document.getElementById('forgotPasswordLink'),
+
+        consoleLoginForm: document.getElementById('consoleLoginForm'),
+        consoleEmail: document.getElementById('consoleEmail'), // Corrected ID
+        consolePassword: document.getElementById('consolePassword'), // Corrected ID
+        
+        consoleRegisterForm: document.getElementById('consoleRegisterForm'),
+        consoleRegisterFullName: document.getElementById('consoleRegisterFullName'), // Corrected ID
+        consoleRegisterEmail: document.getElementById('consoleRegisterEmail'), // Corrected ID
+        consoleRegisterPassword: document.getElementById('consoleRegisterPassword'), // Corrected ID
+
+        showConsoleRegister: document.getElementById('showConsoleRegister'),
+        showConsoleLoginFromRegister: document.getElementById('showConsoleLoginFromRegister'),
+        backToAppLoginFromConsole: document.getElementById('backToAppLoginFromConsole'),
+        backToAppLoginFromConsoleRegister: document.getElementById('backToAppLoginFromConsoleRegister'),
+        
+        toast: document.getElementById('toastNotification'),
+        toastTitle: document.getElementById('toastTitle'),
+        toastMessage: document.getElementById('toastMessage'),
+        toastIcon: document.getElementById('toastNotification').querySelector('i'),
+        toastProgressBar: document.getElementById('toastProgressBar'),
+
+        forgotPasswordModalOverlay: document.getElementById('forgotPasswordModalOverlay'),
+        forgotPasswordForm: document.getElementById('forgotPasswordForm'),
+        forgotEmailInput: document.getElementById('forgotEmail'),
+        sendResetLinkBtn: document.getElementById('sendResetLinkBtn'),
+
+        consoleApprovalModalOverlay: document.getElementById('consoleApprovalModalOverlay'),
+        consoleApprovalTitle: document.getElementById('consoleApprovalTitle'),
+        consoleApprovalMessage: document.getElementById('consoleApprovalMessage'),
+        consoleApprovalIconContainer: document.getElementById('consoleApprovalIconContainer'),
+
+        maintenanceOverlay: document.getElementById('maintenanceOverlay'),
+        
+        accountDeactivatedModalOverlay: document.getElementById('accountDeactivatedModalOverlay'),
+        deactivatedAccountOkBtn: document.getElementById('deactivatedAccountOkBtn'),
+        accountDeactivatedMessage: document.getElementById('accountDeactivatedMessage'),
+
+        whatsappRequiredModalOverlay: document.getElementById('whatsappRequiredModalOverlay'),
+        whatsappNumberInput: document.getElementById('whatsappNumberInput'),
+        saveWhatsappNumberBtn: document.getElementById('saveWhatsappNumberBtn'),
+
+        // 🔐 2FA Elements
+        twoFAVerificationModalOverlay: document.getElementById('twoFAVerificationModalOverlay'),
+        twoFAPhoneDisplay: document.getElementById('twoFAPhoneDisplay'),
+        twoFACodeInput: document.getElementById('twoFACodeInput'),
+        twoFAVerifyBtn: document.getElementById('twoFAVerifyBtn'),
+        twoFACancelBtn: document.getElementById('twoFACancelBtn'),
+        resendTwoFALoginCodeBtn: document.getElementById('resendTwoFALoginCodeBtn'),
+    };
+    
+    const availableLoaders = [DOMElements.loaderL16, DOMElements.loaderL4, DOMElements.spinnerOriginal];
+
+    // Utility functions (copied from original, only relevant ones)
+    function startLoadingAnimation() {
+        if (!DOMElements.pageLoaderProgress) return;
+        clearTimeout(pageLoadTimeout);
+        DOMElements.pageLoaderProgress.classList.remove('done');
+        DOMElements.pageLoaderProgress.style.width = '0%';
+        requestAnimationFrame(() => {
+            DOMElements.pageLoaderProgress.style.opacity = '1';
+            DOMElements.pageLoaderProgress.style.width = (Math.random() * 20 + 30) + '%';
+        });
+    }
+
+    function finishLoadingAnimation() {
+        if (!DOMElements.pageLoaderProgress) return;
+        DOMElements.pageLoaderProgress.style.width = '100%';
+        pageLoadTimeout = setTimeout(() => {
+            DOMElements.pageLoaderProgress.classList.add('done');
+             pageLoadTimeout = setTimeout(() => {
+                if (DOMElements.pageLoaderProgress) {
+                    DOMElements.pageLoaderProgress.style.width = '0%';
+                    DOMElements.pageLoaderProgress.style.opacity = '0';
+                }
+            }, 500);
+        }, 250);
+    }
+
+    function showSpinner(show = true) {
+        if (DOMElements.loadingSpinnerOverlay) {
+            if (show) {
+                availableLoaders.forEach(loader => { if(loader) loader.style.display = 'none'; });
+                const randomIndex = Math.floor(Math.random() * availableLoaders.length);
+                const selectedLoader = availableLoaders[randomIndex];
+                if (selectedLoader) {
+                    selectedLoader.style.display = selectedLoader.classList.contains('loader-l16') ? 'grid' : 'block';
+                } else if (DOMElements.spinnerOriginal) {
+                    DOMElements.spinnerOriginal.style.display = 'block';
+                }
+                DOMElements.loadingSpinnerOverlay.classList.add('show');
+            } else {
+                DOMElements.loadingSpinnerOverlay.classList.remove('show');
+                availableLoaders.forEach(loader => { if(loader) loader.style.display = 'none'; });
+            }
+        }
+    }
+    function openModal(modalOverlayElement) {
+        if (modalOverlayElement) {
+            // Ensure overlay is visible even if it was initially hidden via inline style
+            modalOverlayElement.style.display = 'flex';
+            // Allow CSS transitions by forcing a reflow before adding the show class
+            void modalOverlayElement.offsetWidth;
+            modalOverlayElement.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+    }
+    function closeModal(modalOverlayElement) {
+        if (modalOverlayElement) {
+            modalOverlayElement.classList.remove('show');
+            // Hide overlay after removing show so transitions can run
+            modalOverlayElement.style.display = 'none';
+            const stillOpenModals = document.querySelectorAll('.modal-overlay.show');
+            if (stillOpenModals.length === 0) {
+                document.body.classList.remove('modal-open');
+            }
+        }
+    }
+
+    function showToast(title, message, duration = 3000, isError = false, isWarning = false, customIconClass = null) {
+        if (!DOMElements.toast || !DOMElements.toastTitle || !DOMElements.toastMessage || !DOMElements.toastIcon || !DOMElements.toastProgressBar) { console.error("Toast elements not found!"); return; }
+        DOMElements.toastTitle.textContent = title;
+        DOMElements.toastMessage.innerHTML = message;
+        DOMElements.toast.className = 'toast';
+
+        if (customIconClass) {
+            DOMElements.toastIcon.className = `${customIconClass}`;
+            if (customIconClass.includes('fa-paper-plane')) {
+                 DOMElements.toast.classList.add('info');
+            }
+        } else if (isError) {
+            DOMElements.toast.classList.add('error');
+            DOMElements.toastIcon.className = 'fas fa-times-circle';
+        } else if (isWarning) {
+            DOMElements.toast.classList.add('warning');
+            DOMElements.toastIcon.className = 'fas fa-exclamation-triangle';
+        } else {
+            DOMElements.toast.classList.add('success');
+            DOMElements.toastIcon.className = 'fas fa-check-circle';
+        }
+
+        DOMElements.toast.classList.add('show');
+        DOMElements.toastProgressBar.style.transition = 'none';
+        DOMElements.toastProgressBar.style.width = '100%';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                DOMElements.toastProgressBar.style.transition = `width ${duration}ms linear`;
+                DOMElements.toastProgressBar.style.width = '0%';
+             });
+         });
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            DOMElements.toast.classList.remove('show');
+        }, duration);
+    }
+
+    function generateUserReferralCode(uid) {
+        const uidPart = uid.substring(uid.length - 6).toUpperCase();
+        let randomPart = '';
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        for (let i = 0; i < 4; i++) {
+            randomPart += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return `D4L${uidPart}${randomPart}`;
+    }
+
+    function showConsoleApprovalModal(title, message, iconClass = 'fas fa-user-clock', iconColor = 'var(--warning-color)') {
+        if (DOMElements.consoleApprovalTitle) DOMElements.consoleApprovalTitle.textContent = title;
+        if (DOMElements.consoleApprovalMessage) DOMElements.consoleApprovalMessage.textContent = message;
+        if (DOMElements.consoleApprovalIconContainer) {
+            DOMElements.consoleApprovalIconContainer.innerHTML = `<i class="${iconClass}"></i>`;
+            DOMElements.consoleApprovalIconContainer.firstElementChild.style.color = iconColor;
+        }
+        openModal(DOMElements.consoleApprovalModalOverlay);
+    }
+
+    async function fetchUserData(userId) {
+        if (!userId) return null;
+        try {
+            const userDocRef = doc(db, "users", userId);
+            const docSnap = await getDoc(userDocRef);
+            if (docSnap.exists()) {
+                let data = { id: docSnap.id, ...docSnap.data() };
+                let updatesNeeded = {};
+
+                // Initialize fields if not present
+                if (data.status === undefined) { data.status = 'active'; updatesNeeded.status = 'active'; }
+                if (data.role === 'Agent') { data.role = 'Customer'; updatesNeeded.role = 'Customer'; }
+                if (data.referralCode === undefined) { data.referralCode = generateUserReferralCode(userId); updatesNeeded.referralCode = data.referralCode; }
+                if (data.commissionBalance === undefined) { data.commissionBalance = 0; updatesNeeded.commissionBalance = 0; }
+                if (data.totalReferralsRegistered === undefined) { data.totalReferralsRegistered = 0; updatesNeeded.totalReferralsRegistered = 0; }
+                if (data.totalReferralsPurchased === undefined) { data.totalReferralsPurchased = 0; updatesNeeded.totalReferralsPurchased = 0; }
+                if (data.totalCommissionPaidOut === undefined) { data.totalCommissionPaidOut = 0; updatesNeeded.totalCommissionPaidOut = 0; }
+                if (data.hasMadeFirstPurchaseAsReferred === undefined) { data.hasMadeFirstPurchaseAsReferred = false; updatesNeeded.hasMadeFirstPurchaseAsReferred = false; }
+                if (data.apiAccessEnabled === undefined) { data.apiAccessEnabled = false; updatesNeeded.apiAccessEnabled = false; }
+                if (data.apiKey === undefined) { data.apiKey = null; updatesNeeded.apiKey = null; }
+                if (data.apiKeyGeneratedAt === undefined) { data.apiKeyGeneratedAt = null; updatesNeeded.apiKeyGeneratedAt = null; }
+                if (data.whatsappNumber === undefined) { data.whatsappNumber = data.mobile || null; updatesNeeded.whatsappNumber = data.whatsappNumber; }
+                if (data.whatsappConfirmed === undefined) { data.whatsappConfirmed = false; updatesNeeded.whatsappConfirmed = false; }
+
+                if (Object.keys(updatesNeeded).length > 0) {
+                    await updateDoc(userDocRef, updatesNeeded);
+                    console.log(`User ${userId} data initialized/updated.`);
+                }
+                return data;
+            } else {
+                console.log("No such user document!");
+                return null;
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            return null;
+        }
+    }
+
+    async function initializeSiteSettings() {
+        const settingsDocRef = doc(db, "siteSettings", "config");
+        const docSnap = await getDoc(settingsDocRef);
+        if (docSnap.exists()) {
+            siteSettings = { ...siteSettings, ...docSnap.data() };
+        } else {
+            console.warn("Site settings document not found in Firestore. Using defaults.");
+        }
+        
+        // Apply registration disabled status
+        if (DOMElements.registerSubmitBtn) {
+            DOMElements.registerSubmitBtn.disabled = siteSettings.registrationDisabled;
+            DOMElements.registerSubmitBtn.title = siteSettings.registrationDisabled ? "Registration is currently disabled." : "Sign Up";
+            DOMElements.registerSubmitBtn.style.cursor = siteSettings.registrationDisabled ? "not-allowed" : "pointer";
+            DOMElements.registerSubmitBtn.style.opacity = siteSettings.registrationDisabled ? "0.7" : "1";
+        }
+        if (DOMElements.showRegisterLink) DOMElements.showRegisterLink.style.display = siteSettings.registrationDisabled ? 'none' : 'inline';
+
+        DOMElements.maintenanceOverlay.style.display = siteSettings.maintenanceModeEnabled ? 'flex' : 'none';
+    }
+
+    function showLoginPage() {
+        if(DOMElements.authWrapper) DOMElements.authWrapper.style.display = 'flex';
+        if(DOMElements.loginPage) DOMElements.loginPage.style.display = 'block';
+        if(DOMElements.registerPage) DOMElements.registerPage.style.display = 'none';
+        if(DOMElements.consoleAuthPage) DOMElements.consoleAuthPage.style.display = 'none';
+        if(DOMElements.loginForm) DOMElements.loginForm.reset();
+        finishLoadingAnimation();
+    }
+
+    function showRegisterPage() {
+        if (siteSettings.registrationDisabled) {
+            showToast("Registration Disabled", "New user registration is currently disabled by the administrator.", 4000, false, true, "fas fa-user-lock");
+            showLoginPage(); // Fallback to login if registration is disabled
+            return;
+        }
+        if(DOMElements.authWrapper) DOMElements.authWrapper.style.display = 'flex';
+        if(DOMElements.loginPage) DOMElements.loginPage.style.display = 'none';
+        if(DOMElements.registerPage) DOMElements.registerPage.style.display = 'block';
+        if(DOMElements.consoleAuthPage) DOMElements.consoleAuthPage.style.display = 'none';
+        if(DOMElements.registerForm) DOMElements.registerForm.reset();
+        finishLoadingAnimation();
+    }
+
+    function showConsoleAccessPage(showLogin = true) {
+        if(DOMElements.authWrapper) DOMElements.authWrapper.style.display = 'flex';
+        if(DOMElements.loginPage) DOMElements.loginPage.style.display = 'none';
+        if(DOMElements.registerPage) DOMElements.registerPage.style.display = 'none';
+        if(DOMElements.consoleAuthPage) DOMElements.consoleAuthPage.style.display = 'block';
+
+        if (showLogin) {
+            if(DOMElements.consoleLoginPageContent) DOMElements.consoleLoginPageContent.style.display = 'block';
+            if(DOMElements.consoleRegisterPageContent) DOMElements.consoleRegisterPageContent.style.display = 'none';
+            if(DOMElements.consoleLoginForm) DOMElements.consoleLoginForm.reset();
+        } else {
+            if(DOMElements.consoleLoginPageContent) DOMElements.consoleLoginPageContent.style.display = 'none';
+            if(DOMElements.consoleRegisterPageContent) DOMElements.consoleRegisterPageContent.style.display = 'block';
+            if(DOMElements.consoleRegisterForm) DOMElements.consoleRegisterForm.reset();
+        }
+        finishLoadingAnimation();
+    }
+
+    async function handleAuthStateChange(user) {
+        // If we're in the middle of 2FA verification, don't interfere or redirect
+        if (LoginTwoFAManager.isVerifying) {
+            // Prevent redirect to dashboard until 2FA is verified
+            console.log('2FA verification in progress, skipping auth state change and redirect');
+            return;
+        }
+
+        // Always try to load settings first
+        await initializeSiteSettings();
+
+        // If in maintenance mode, show maintenance overlay and do not proceed with auth
+        if (siteSettings.maintenanceModeEnabled) {
+            DOMElements.authWrapper.style.display = 'none';
+            DOMElements.maintenanceOverlay.style.display = 'flex';
+            showSpinner(false); // Stop any loader
+            finishLoadingAnimation(); // Complete page load animation
+            return; // Stop execution
+        } else {
+            DOMElements.maintenanceOverlay.style.display = 'none'; // Ensure it's hidden if not in maintenance
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isConsolePath = urlParams.get('console_access') === 'true';
+        const showWhatsappPrompt = sessionStorage.getItem('justSignedUp') === 'true'; // Check session storage flag
+        const statusMessage = urlParams.get('status');
+
+        if (user) {
+            currentUser = user;
+            currentUserData = await fetchUserData(user.uid);
+
+            if (!currentUserData) {
+                console.error(`No Firestore document found for UID: ${user.uid}. Forcing logout and redirecting to auth.`);
+                showToast("Error", "User profile error. Please log in again.", 4000, true);
+                showSpinner(false); finishLoadingAnimation();
+                await firebaseSignOut(auth);
+                // Redirect will happen on auth state change after logout, or manually here
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            if (currentUserData.status === 'deactivated') {
+                if (DOMElements.accountDeactivatedMessage) DOMElements.accountDeactivatedMessage.textContent = "Your account is deactivated. Please contact support for assistance.";
+                openModal(DOMElements.accountDeactivatedModalOverlay);
+                showSpinner(false); finishLoadingAnimation(); // Stop loading, show modal
+                await firebaseSignOut(auth); // Ensure they are logged out
+                // Redirection will implicitly happen to auth.html on next auth state change or on button click
+                return;
+            }
+
+            if (isConsolePath) {
+                if (currentUserData.role === 'console_admin' || currentUserData.role === 'super_admin_dev') {
+                    showToast('Success', 'Super Agent login successful. Redirecting...', 2000);
+                    showSpinner(false); finishLoadingAnimation(); // Stop loading before redirect
+                    window.location.href = 'console.html';
+                } else if (currentUserData.role === 'console_pending_approval') {
+                    showConsoleApprovalModal("Access Pending", "Your Super Agent access request is still pending approval.", "fas fa-user-clock", "var(--warning-color)");
+                    showSpinner(false); finishLoadingAnimation(); // Stop loading, show modal
+                    await firebaseSignOut(auth); // Log them out from app context if not console admin
+                    // Redirection will implicitly happen to auth.html on next auth state change or on button click
+                } else {
+                    showToast('Access Denied', 'You do not have Super Agent privileges.', 3000, true);
+                    showSpinner(false); finishLoadingAnimation(); // Stop loading
+                    await firebaseSignOut(auth);
+                    // Redirection will implicitly happen to auth.html on next auth state change or on button click
+                }
+                return; // Stop processing further for console path
+            }
+
+            // Handle WhatsApp prompt for new signups on first login
+            if (showWhatsappPrompt && !currentUserData.whatsappConfirmed) {
+                sessionStorage.removeItem('justSignedUp'); // Clear flag immediately to prevent repeated prompts
+                if (DOMElements.whatsappNumberInput) {
+                    const mobilePrefix = currentUserData.mobile && currentUserData.mobile.startsWith('233') ? '+' : '';
+                    DOMElements.whatsappNumberInput.value = `${mobilePrefix}${currentUserData.mobile || ''}`;
+                }
+                openModal(DOMElements.whatsappRequiredModalOverlay);
+                showSpinner(false); finishLoadingAnimation(); // Stop loading, show modal
+                return; // Stay on auth page until WhatsApp is confirmed
+            }
+            
+            // If all checks pass and not pending 2FA, redirect to the main app
+            if (!LoginTwoFAManager.isVerifying) {
+                showSpinner(false); finishLoadingAnimation(); // Stop loading before redirect
+                window.location.href = 'index.html';
+            }
+
+        } else {
+            // User is not logged in, show appropriate auth page
+            currentUser = null;
+            currentUserData = null;
+
+            if (isConsolePath) {
+                showConsoleAccessPage(true);
+            } else if (statusMessage === 'deactivated') {
+                if (DOMElements.accountDeactivatedMessage) DOMElements.accountDeactivatedMessage.textContent = "Your account was deactivated. Please contact support for assistance.";
+                openModal(DOMElements.accountDeactivatedModalOverlay);
+                showLoginPage(); // Show login page behind modal
+            } else if (urlParams.get('console_access') === 'denied') {
+                showToast('Access Denied', 'You do not have Super Agent privileges.', 3000, true);
+                showLoginPage();
+            } else {
+                showLoginPage(); // Default to login page
+            }
+        }
+    }
+
+    // Initial check on page load
+    onAuthStateChanged(auth, handleAuthStateChange);
+
+    // =========================================================================
+    // 🔐 TWO-FACTOR AUTHENTICATION (2FA) MANAGER FOR LOGIN
+    // =========================================================================
+    const LoginTwoFAManager = {
+        API_BASE_URL: 'https://api-snowy-eight.vercel.app',
+        pendingUser: null,
+        pendingUserData: null,
+        pendingPassword: null, // Store password temporarily for re-auth
+        isVerifying: false, // Flag to prevent auto-redirect during 2FA
+
+        async sendCode(phoneNumber, userId) {
+            try {
+                const response = await fetch(`${this.API_BASE_URL}/api/send-2fa-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber, userId })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    return { success: true };
+                } else {
+                    throw new Error(data.error || 'Failed to send code');
+                }
+            } catch (error) {
+                console.error('Error sending 2FA code:', error);
+                return { success: false, error: error.message };
+            }
+        },
+
+        async verifyCode(code, userId) {
+            try {
+                const response = await fetch(`${this.API_BASE_URL}/api/verify-2fa-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, userId })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    return { success: true };
+                } else {
+                    throw new Error(data.error || 'Invalid code');
+                }
+            } catch (error) {
+                console.error('Error verifying 2FA code:', error);
+                return { success: false, error: error.message };
+            }
+        }
+    };
+
+    // 🔐 2FA Cancel Button
+    if (DOMElements.twoFACancelBtn) {
+        DOMElements.twoFACancelBtn.addEventListener('click', async () => {
+            closeModal(DOMElements.twoFAVerificationModalOverlay);
+            // Clear all pending data
+            LoginTwoFAManager.pendingUser = null;
+            LoginTwoFAManager.pendingUserData = null;
+            LoginTwoFAManager.pendingPassword = null;
+            LoginTwoFAManager.isVerifying = false; // Reset flag
+            // User is already signed out, just show message
+            showToast('Login Cancelled', 'Please login again', 2000, false, true);
+        });
+    }
+
+    // 🔐 2FA Verify Button
+    if (DOMElements.twoFAVerifyBtn) {
+        DOMElements.twoFAVerifyBtn.addEventListener('click', async () => {
+            const code = DOMElements.twoFACodeInput.value.trim();
+            if (!code || code.length !== 6) {
+                showToast('Error', 'Please enter the 6-digit code', 3000, true);
+                return;
+            }
+
+            if (!LoginTwoFAManager.pendingUser || !LoginTwoFAManager.pendingUserData) {
+                showToast('Error', 'Session expired. Please login again', 3000, true);
+                closeModal(DOMElements.twoFAVerificationModalOverlay);
+                return;
+            }
+
+            showSpinner(true);
+            const result = await LoginTwoFAManager.verifyCode(code, LoginTwoFAManager.pendingUser.uid);
+
+            if (result.success) {
+                showToast('Verified', '2FA verification successful!', 2000);
+                closeModal(DOMElements.twoFAVerificationModalOverlay);
+
+                // Re-authenticate the user with Firebase
+                try {
+                    // Get email and password from stored data
+                    const email = LoginTwoFAManager.pendingUserData.email;
+                    const password = LoginTwoFAManager.pendingPassword;
+
+                    if (!password) {
+                        throw new Error('Password not found. Please login again.');
+                    }
+
+                    // Sign in again
+                    await signInWithEmailAndPassword(auth, email, password);
+
+                    // Check user role and redirect accordingly
+                    const userData = LoginTwoFAManager.pendingUserData;
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const isConsolePath = urlParams.get('console_access') === 'true';
+
+                    if (isConsolePath) {
+                        if (userData.role === 'console_admin' || userData.role === 'super_admin_dev') {
+                            setTimeout(() => {
+                                showSpinner(false);
+                                window.location.href = 'console.html';
+                            }, 1000);
+                        } else {
+                            showSpinner(false);
+                            showToast('Access Denied', 'You do not have Super Agent privileges.', 3000, true);
+                            await firebaseSignOut(auth);
+                        }
+                    } else {
+                        // Regular user login - redirect to dashboard
+                        setTimeout(() => {
+                            showSpinner(false);
+                            window.location.href = 'index.html';
+                        }, 1000);
+                    }
+
+                    // Clear all pending data including password
+                    LoginTwoFAManager.pendingUser = null;
+                    LoginTwoFAManager.pendingUserData = null;
+                    LoginTwoFAManager.pendingPassword = null;
+                    LoginTwoFAManager.isVerifying = false; // Reset flag to allow redirect
+                } catch (error) {
+                    showSpinner(false);
+                    console.error('Re-authentication error:', error);
+                    showToast('Error', 'Authentication failed. Please login again', 3000, true);
+                    closeModal(DOMElements.twoFAVerificationModalOverlay);
+                    // Clear data on error
+                    LoginTwoFAManager.pendingUser = null;
+                    LoginTwoFAManager.pendingUserData = null;
+                    LoginTwoFAManager.pendingPassword = null;
+                    LoginTwoFAManager.isVerifying = false; // Reset flag
+                }
+            } else {
+                showSpinner(false);
+                showToast('Error', result.error || 'Invalid verification code', 3000, true);
+            }
+        });
+    }
+
+    // 🔐 Resend Code Button
+    if (DOMElements.resendTwoFALoginCodeBtn) {
+        DOMElements.resendTwoFALoginCodeBtn.addEventListener('click', async () => {
+            if (!LoginTwoFAManager.pendingUserData?.twoFAPhone) {
+                showToast('Error', 'No phone number found', 3000, true);
+                return;
+            }
+
+            showSpinner(true);
+            const result = await LoginTwoFAManager.sendCode(
+                LoginTwoFAManager.pendingUserData.twoFAPhone,
+                LoginTwoFAManager.pendingUser.uid
+            );
+            showSpinner(false);
+
+            if (result.success) {
+                showToast('Code Resent', 'New verification code sent', 3000);
+            } else {
+                showToast('Error', result.error || 'Failed to resend code', 3000, true);
+            }
+        });
+    }
+
+    // --- Authentication Event Listeners ---
+    DOMElements.loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        showSpinner(true);
+        try {
+            const email = DOMElements.loginEmail.value.trim();
+            const password = DOMElements.loginPassword.value;
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Check if user has 2FA enabled
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+
+                // Check if account is deactivated
+                if (userData.status === 'deactivated') {
+                    showSpinner(false);
+                    if (DOMElements.accountDeactivatedMessage) {
+                        DOMElements.accountDeactivatedMessage.textContent = "Your account is deactivated. Please contact support for assistance.";
+                    }
+                    openModal(DOMElements.accountDeactivatedModalOverlay);
+                    await firebaseSignOut(auth);
+                    return;
+                }
+
+                if (userData.twoFAEnabled && userData.twoFAPhone) {
+                    // Set flag to prevent auto-redirect
+                    LoginTwoFAManager.isVerifying = true;
+
+                    // Store user data and password for later
+                    LoginTwoFAManager.pendingUser = user;
+                    LoginTwoFAManager.pendingUserData = userData;
+                    LoginTwoFAManager.pendingPassword = password; // Store for re-auth
+
+                    // Send 2FA code
+                    showToast('Sending Code', 'Sending verification code...', 2000, false, false, 'fas fa-paper-plane');
+                    const result = await LoginTwoFAManager.sendCode(userData.twoFAPhone, user.uid);
+
+                    if (result.success) {
+                        showSpinner(false);
+                        // Show 2FA modal
+                        if (DOMElements.twoFAPhoneDisplay) {
+                            DOMElements.twoFAPhoneDisplay.textContent = userData.twoFAPhone;
+                        }
+                        if (DOMElements.twoFACodeInput) {
+                            DOMElements.twoFACodeInput.value = '';
+                        }
+                        openModal(DOMElements.twoFAVerificationModalOverlay);
+                        showToast('Code Sent', 'Verification code sent to your phone', 3000);
+
+                        // Sign out temporarily - they must verify 2FA first
+                        await firebaseSignOut(auth);
+                    } else {
+                        showSpinner(false);
+                        showToast('Error', result.error || 'Failed to send 2FA code', 3000, true);
+                        LoginTwoFAManager.isVerifying = false; // Reset flag
+                        await firebaseSignOut(auth);
+                    }
+                } else {
+                    // No 2FA enabled, proceed with normal redirect
+                    showSpinner(false);
+                    // Let onAuthStateChanged handle the redirect
+                }
+            } else {
+                showSpinner(false);
+                // No user document found
+                showToast('Error', 'User profile not found', 3000, true);
+                await firebaseSignOut(auth);
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            showToast('Error', error.message || 'Invalid email or password.', 3000, true);
+            showSpinner(false);
+        }
+    });
+
+    DOMElements.registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (siteSettings.registrationDisabled) {
+            showToast("Registration Disabled", "New user registration is currently disabled by the administrator.", 4000, false, true, "fas fa-user-lock");
+            return;
+        }
+        showSpinner(true);
+        const fullName = DOMElements.registerFullName.value.trim(); // Corrected reference
+        const email = DOMElements.registerEmail.value.trim(); // Corrected reference
+        const mobile = DOMElements.registerMobile.value.trim(); // Corrected reference
+        const password = DOMElements.registerPassword.value; // Corrected reference
+        const mobileRegex = /^233\d{9}$/;
+
+        if (!fullName || !email || !mobile || !password) { showToast('Error', 'Please fill all fields.', 3000, true); showSpinner(false); return; }
+        if (password.length < 6) { showToast('Error', 'Password must be at least 6 characters.', 3000, true); showSpinner(false); return; }
+        if (!mobileRegex.test(mobile)) { showToast('Error', 'Invalid mobile number format. Use 233xxxxxxxxx.', 3000, true); showSpinner(false); return; }
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            const ownReferralCode = generateUserReferralCode(user.uid);
+
+            const userDataToSet = {
+                uid: user.uid, fullName: fullName, email: email, mobile: mobile,
+                role: "Customer", status: "active",  balance: 0, smsCredits: 0,
+                createdAt: serverTimestamp(), referralCode: ownReferralCode,
+                commissionBalance: 0, totalReferralsRegistered: 0, totalReferralsPurchased: 0,
+                totalCommissionPaidOut: 0, hasMadeFirstPurchaseAsReferred: false,
+                apiAccessEnabled: false, apiKey: null, apiKeyGeneratedAt: null,
+                whatsappNumber: mobile, whatsappConfirmed: false
+            };
+
+            await setDoc(doc(db, "users", user.uid), userDataToSet);
+            sessionStorage.setItem('justSignedUp', 'true'); // Set flag for WhatsApp prompt
+            window.location.href = 'index.html';
+        } catch (error) {
+            sessionStorage.removeItem('justSignedUp'); // Clear flag on failure
+            console.error("Registration error:", error);
+            showToast('Error', error.message || 'Registration failed.', 3000, true);
+            showSpinner(false);
+        }
+    });
+
+
+    if (DOMElements.consoleLoginForm) {
+        DOMElements.consoleLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showSpinner(true);
+            const email = DOMElements.consoleEmail.value; // Corrected reference
+            const password = DOMElements.consolePassword.value; // Corrected reference
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                const userData = await fetchUserData(user.uid);
+
+                if (userData && (userData.role === 'console_admin' || userData.role === 'super_admin_dev')) {
+                    showToast('Success', 'Super Agent login successful. Redirecting...', 2000);
+                    showSpinner(false); finishLoadingAnimation(); // Stop loader before redirect
+                    window.location.href = 'console.html'; // Redirect to console app
+                } else if (userData && userData.role === 'console_pending_approval') {
+                     showConsoleApprovalModal("Access Pending", "Your Super Agent access request is still pending approval.", "fas fa-user-clock", "var(--warning-color)");
+                     showSpinner(false); finishLoadingAnimation(); // Stop loader, show modal
+                     await firebaseSignOut(auth); // Log them out from app context if they are not console admin
+                } else {
+                    showToast('Access Denied', 'You do not have Super Agent privileges.', 3000, true);
+                    showSpinner(false); finishLoadingAnimation(); // Stop loader
+                    await firebaseSignOut(auth);
+                }
+            } catch (error) {
+                console.error("Super Agent login error:", error);
+                showToast('Error', error.message || 'Invalid Super Agent credentials.', 3000, true);
+            }
+            showSpinner(false); // Ensure spinner hides on failure
+        });
+    }
+
+    if (DOMElements.consoleRegisterForm) {
+        DOMElements.consoleRegisterForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showSpinner(true);
+            const fullName = DOMElements.consoleRegisterFullName.value.trim(); // Corrected reference
+            const email = DOMElements.consoleRegisterEmail.value.trim(); // Corrected reference
+            const password = DOMElements.consoleRegisterPassword.value; // Corrected reference
+
+            if (!fullName || !email || !password) {
+                showToast('Error', 'All fields are required.', 3000, true);
+                showSpinner(false); return;
+            }
+            if (password.length < 6) {
+                showToast('Error', 'Password must be at least 6 characters.', 3000, true);
+                showSpinner(false); return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                await setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    fullName: fullName,
+                    email: email,
+                    role: "console_pending_approval",
+                    status: "active",
+                    createdAt: serverTimestamp(),
+                    apiAccessEnabled: false, apiKey: null, apiKeyGeneratedAt: null,
+                });
+
+                await firebaseSignOut(auth); // Log out the newly created user from app context
+                showConsoleApprovalModal("Request Submitted", "Your request for Super Agent access has been submitted. You will be notified by admin once it's approved.", "fas fa-paper-plane", "var(--primary-green)");
+                showConsoleAccessPage(true); // Redirect to console login
+            } catch (error) {
+                console.error("Super Agent registration error:", error);
+                let errMsg = 'Failed to submit Super Agent access request.';
+                if (error.code === 'auth/email-already-in-use') {
+                    errMsg = 'This email is already associated with an account. Try logging in or use a different email.';
+                } else {
+                    errMsg = error.message || errMsg;
+                }
+                showToast('Error', errMsg, 4000, true);
+            }
+            showSpinner(false); // Ensure spinner hides on failure
+        });
+    }
+
+    if(DOMElements.showConsoleRegister) DOMElements.showConsoleRegister.addEventListener('click', () => showConsoleAccessPage(false));
+    if(DOMElements.showConsoleLoginFromRegister) DOMElements.showConsoleLoginFromRegister.addEventListener('click', () => showConsoleAccessPage(true));
+    if(DOMElements.backToAppLoginFromConsole) DOMElements.backToAppLoginFromConsole.addEventListener('click', () => showLoginPage());
+    if(DOMElements.backToAppLoginFromConsoleRegister) DOMElements.backToAppLoginFromConsoleRegister.addEventListener('click', () => showLoginPage());
+
+    DOMElements.forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        if(DOMElements.forgotPasswordForm) DOMElements.forgotPasswordForm.reset();
+        openModal(DOMElements.forgotPasswordModalOverlay);
+    });
+
+    DOMElements.sendResetLinkBtn.addEventListener('click', async () => {
+        const email = DOMElements.forgotEmailInput.value.trim();
+        if (!email) { showToast('Error', 'Please enter your email address.', 3000, true); return; }
+        showSpinner(true);
+        try {
+            await sendPasswordResetEmail(auth, email);
+            showToast('Success', 'Password reset email sent! Check your inbox.', 4000);
+            closeModal(DOMElements.forgotPasswordModalOverlay);
+        } catch (error) {
+            console.error("Password reset error:", error);
+            showToast('Error', error.message || 'Failed to send reset email.', 3000, true);
+        }
+        showSpinner(false);
+    });
+
+    if (DOMElements.deactivatedAccountOkBtn) {
+        DOMElements.deactivatedAccountOkBtn.addEventListener('click', () => {
+            closeModal(DOMElements.accountDeactivatedModalOverlay);
+            window.location.href = 'auth.html'; // Ensure redirection after closing modal
+        });
+    }
+
+    // NEW: Save WhatsApp Number Button Listener (for first login prompt)
+    if(DOMElements.saveWhatsappNumberBtn) DOMElements.saveWhatsappNumberBtn.addEventListener('click', async function() {
+        const whatsappNumInput = DOMElements.whatsappNumberInput.value.trim();
+        const whatsappRegex = /^\+\d{12}$/; // Assumes +233 followed by 9 digits
+
+        if (!whatsappNumInput) {
+            showToast('Error', 'Please enter your WhatsApp number.', 3000, true);
+            return;
+        }
+        if (!whatsappRegex.test(whatsappNumInput)) {
+            showToast('Error', 'Invalid format. Use +CountryCodeNumber (e.g., +233551234567).', 4000, true);
+            return;
+        }
+
+        showSpinner(true);
+        try {
+            // Need to fetch user data before updating if it's not already loaded
+            if (!currentUserData && currentUser) {
+                currentUserData = await fetchUserData(currentUser.uid);
+            }
+            if (currentUser && currentUser.uid) {
+                const userDocRef = doc(db, "users", currentUser.uid);
+                await updateDoc(userDocRef, {
+                    whatsappNumber: whatsappNumInput,
+                    whatsappConfirmed: true
+                });
+                showToast('Success', 'WhatsApp number saved successfully!', 2500, false, false, 'fas fa-check-circle');
+                closeModal(DOMElements.whatsappRequiredModalOverlay);
+                showSpinner(false); finishLoadingAnimation(); // Stop loader before redirect
+                window.location.href = 'index.html'; // Redirect to main app AFTER saving
+            } else {
+                 showToast('Error', 'User not authenticated. Cannot save WhatsApp number.', 3000, true);
+                 showSpinner(false); // Hide spinner on failure
+            }
+        } catch (error) {
+            showToast('Error', 'Failed to save WhatsApp number. Please try again.', 3000, true);
+            showSpinner(false); // Hide spinner on error
+        }
+    });
+
+
+    if(DOMElements.showRegisterLink) DOMElements.showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showRegisterPage(); });
+    if(DOMElements.showLoginFromRegisterLink) DOMElements.showLoginFromRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showLoginPage(); });
+    document.querySelectorAll('.password-toggle').forEach(toggle => {
+         toggle.addEventListener('click', function() {
+             const passwordInput = this.previousElementSibling;
+             const icon = this.querySelector('i');
+             if (passwordInput.type === 'password') {
+                 passwordInput.type = 'text';
+                 icon.classList.replace('fa-eye', 'fa-eye-slash');
+             } else {
+                 passwordInput.type = 'password';
+                 icon.classList.replace('fa-eye-slash', 'fa-eye');
+             }
+         });
+     });
+    document.querySelectorAll('[data-close-modal]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modalId = btn.dataset.closeModal;
+            const modalToClose = document.getElementById(modalId);
+            if (modalToClose) {
+                closeModal(modalToClose);
+            }
+        });
+    });
+    document.querySelectorAll('.modal-overlay').forEach(modalOverlayEl => {
+        modalOverlayEl.addEventListener('click', (event) => {
+            // Allow closing by clicking overlay, but not if clicking inside the content box
+            if (event.target === modalOverlayEl) {
+                closeModal(modalOverlayEl);
+            }
+        });
+    });
+
+</script>
+</body>
+</html>
